@@ -1,0 +1,144 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List
+from core.database import get_db
+from core.auth import get_current_user
+from models.user import Order, OrderItem, Product, SellerProfile
+from schemas.schemas import OrderCreate, OrderOut
+from services.whatsapp import notify_seller_new_order
+
+router = APIRouter(prefix="/api/orders", tags=["orders"])
+
+DELIVERY_FEE = 10.0
+
+@router.post("/", response_model=OrderOut)
+def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role == "seller":
+        raise HTTPException(status_code=403, detail="Sellers cannot place orders")
+
+    seller = db.query(SellerProfile).filter(SellerProfile.id == data.seller_id).first()
+    if not seller or not seller.is_approved:
+        raise HTTPException(status_code=404, detail="Seller not found or not approved")
+
+    total = 0.0
+    order_items = []
+    for item_data in data.items:
+        product = db.query(Product).filter(
+            Product.id == item_data.product_id,
+            Product.seller_id == seller.id,
+            Product.is_available == True
+        ).first()
+        if not product:
+            raise HTTPException(status_code=400, detail=f"Product {item_data.product_id} not available")
+
+        if product.track_stock and product.stock_quantity != -1:
+            if product.stock_quantity < item_data.quantity:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Not enough stock for {product.name}. Only {product.stock_quantity} left."
+                )
+
+        subtotal = product.price * item_data.quantity
+        total += subtotal
+        order_items.append((OrderItem(
+            product_id=product.id,
+            quantity=item_data.quantity,
+            unit_price=product.price,
+        ), product, item_data.quantity))
+
+    # Calculate commission using seller's custom rate
+    order_total = total + DELIVERY_FEE
+    commission_rate = seller.commission_rate if seller.commission_rate is not None else 12.0
+    commission_amount = round(order_total * commission_rate / 100, 2)
+
+    order = Order(
+        buyer_id=current_user.id,
+        seller_id=seller.id,
+        delivery_address=data.delivery_address,
+        delivery_area=data.delivery_area,
+        notes=data.notes,
+        total_amount=total,
+        delivery_fee=DELIVERY_FEE,
+        commission_amount=commission_amount,
+        status="pending",
+    )
+    db.add(order)
+    db.flush()
+
+    items_for_notification = []
+    for item, product, quantity in order_items:
+        item.order_id = order.id
+        db.add(item)
+
+        if product.track_stock and product.stock_quantity != -1:
+            product.stock_quantity -= quantity
+            if product.stock_quantity <= 0:
+                product.stock_quantity = 0
+                product.is_available = False
+
+        items_for_notification.append({"quantity": quantity, "name": product.name})
+
+    seller.total_orders += 1
+    db.commit()
+    db.refresh(order)
+
+    try:
+        if seller.user.phone:
+            notify_seller_new_order(
+                seller_phone=seller.user.phone,
+                seller_name=seller.shop_name,
+                buyer_name=current_user.full_name,
+                items=items_for_notification,
+                total=order.total_amount + order.delivery_fee,
+                area=order.delivery_area,
+                notes=order.notes
+            )
+    except Exception as e:
+        print(f"WhatsApp notification failed: {e}")
+
+    return order
+
+@router.get("/my", response_model=List[OrderOut])
+def my_orders(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role in ("seller", "admin"):
+        seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+        if seller:
+            return db.query(Order).filter(Order.seller_id == seller.id).order_by(Order.created_at.desc()).all()
+        return []
+    return db.query(Order).filter(Order.buyer_id == current_user.id).order_by(Order.created_at.desc()).all()
+
+@router.get("/{order_id}", response_model=OrderOut)
+def get_order(order_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+    is_owner = order.buyer_id == current_user.id
+    is_seller = seller and order.seller_id == seller.id
+    if not (is_owner or is_seller or current_user.role == "admin"):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return order
+
+@router.patch("/{order_id}/status")
+def update_order_status(order_id: int, status: str, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    valid_transitions = {
+        "pending": ["confirmed", "cancelled"],
+        "confirmed": ["preparing", "cancelled"],
+        "preparing": ["ready"],
+        "ready": ["delivering"],
+        "delivering": ["delivered"],
+    }
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+    is_seller = seller and order.seller_id == seller.id
+    is_buyer = order.buyer_id == current_user.id
+    if not (is_seller or is_buyer or current_user.role == "admin"):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    allowed = valid_transitions.get(order.status, [])
+    if status not in allowed:
+        raise HTTPException(status_code=400, detail=f"Cannot move from {order.status} to {status}")
+    order.status = status
+    db.commit()
+    return {"order_id": order_id, "status": order.status}
