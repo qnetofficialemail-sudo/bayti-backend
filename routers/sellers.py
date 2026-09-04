@@ -119,12 +119,11 @@ def update_schedule(
     if not seller:
         raise HTTPException(status_code=404, detail="Seller profile not found")
 
-    if data.available_days is not None:
-        seller.available_days = data.available_days
-    if data.available_from is not None:
-        seller.available_from = data.available_from
-    if data.available_until is not None:
-        seller.available_until = data.available_until
+    # Use model_fields_set to detect explicitly passed fields (including null)
+    fields = data.model_dump(exclude_unset=False)
+    seller.available_days = fields.get("available_days")
+    seller.available_from = fields.get("available_from")
+    seller.available_until = fields.get("available_until")
     if data.accepting_orders is not None:
         seller.accepting_orders = data.accepting_orders
 
