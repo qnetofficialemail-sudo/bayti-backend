@@ -119,6 +119,7 @@ class Review(Base):
     seller_id = Column(Integer, ForeignKey("seller_profiles.id"))
     rating = Column(Integer, nullable=False)  # 1-5
     comment = Column(Text, nullable=True)
+    is_approved = Column(Boolean, default=False)  # admin must approve
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     buyer = relationship("User", foreign_keys=[buyer_id])
     seller = relationship("SellerProfile", foreign_keys=[seller_id])

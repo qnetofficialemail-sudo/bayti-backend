@@ -50,7 +50,7 @@ def create_review(
 
 @router.get("/seller/{seller_id}")
 def get_seller_reviews(seller_id: int, db: Session = Depends(get_db)):
-    reviews = db.query(Review).filter(Review.seller_id == seller_id).order_by(Review.created_at.desc()).limit(20).all()
+    reviews = db.query(Review).filter(Review.seller_id == seller_id, Review.is_approved == True).order_by(Review.created_at.desc()).limit(20).all()
     return [{
         "id": r.id,
         "rating": r.rating,
@@ -63,3 +63,46 @@ def get_seller_reviews(seller_id: int, db: Session = Depends(get_db)):
 def check_review(order_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     review = db.query(Review).filter(Review.order_id == order_id).first()
     return {"reviewed": review is not None, "rating": review.rating if review else None}
+
+
+@router.get("/admin/pending")
+def get_pending_reviews(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    reviews = db.query(Review).filter(Review.is_approved == False).order_by(Review.created_at.desc()).all()
+    return [{
+        "id": r.id,
+        "rating": r.rating,
+        "comment": r.comment,
+        "is_approved": r.is_approved,
+        "buyer_name": r.buyer.full_name if r.buyer else "Anonymous",
+        "seller_name": r.seller.shop_name if r.seller else "",
+        "created_at": r.created_at,
+    } for r in reviews]
+
+@router.patch("/admin/{review_id}/approve")
+def approve_review(review_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    review = db.query(Review).filter(Review.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    review.is_approved = True
+    # Update seller rating with approved reviews only
+    seller = db.query(SellerProfile).filter(SellerProfile.id == review.seller_id).first()
+    if seller:
+        avg = db.query(func.avg(Review.rating)).filter(Review.seller_id == seller.id, Review.is_approved == True).scalar()
+        seller.rating = round(float(avg), 1) if avg else seller.rating
+    db.commit()
+    return {"message": "Review approved"}
+
+@router.delete("/admin/{review_id}")
+def delete_review(review_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    review = db.query(Review).filter(Review.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    db.delete(review)
+    db.commit()
+    return {"message": "Review deleted"}
