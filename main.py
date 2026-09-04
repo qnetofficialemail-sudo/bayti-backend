@@ -38,14 +38,14 @@ def seed_data():
             return
 
         categories = [
-            Category(name="Home Cooked Meals", icon="🍽️"),
-            Category(name="Desserts & Sweets", icon="🍰"),
-            Category(name="Baked Goods", icon="🥖"),
-            Category(name="Healthy Food", icon="🥗"),
-            Category(name="Juices & Drinks", icon="🥤"),
-            Category(name="Handmade Crafts", icon="🎨"),
-            Category(name="Beauty & Skincare", icon="✨"),
-            Category(name="Perfumes & Candles", icon="🕯️"),
+            Category(name="Home Cooked Meals", name_ar="وجبات منزلية", icon="🍽️"),
+            Category(name="Desserts & Sweets", name_ar="حلويات وسكريات", icon="🍰"),
+            Category(name="Baked Goods", name_ar="مخبوزات", icon="🥖"),
+            Category(name="Healthy Food", name_ar="طعام صحي", icon="🥗"),
+            Category(name="Juices & Drinks", name_ar="عصائر ومشروبات", icon="🥤"),
+            Category(name="Handmade Crafts", name_ar="مشغولات يدوية", icon="🎨"),
+            Category(name="Beauty & Skincare", name_ar="جمال وعناية بالبشرة", icon="✨"),
+            Category(name="Perfumes & Candles", name_ar="عطور وشموع", icon="🕯️"),
         ]
         db.add_all(categories)
         db.flush()
