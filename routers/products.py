@@ -6,12 +6,10 @@ from core.auth import get_current_user, get_current_seller
 from models.user import Product, SellerProfile, Category
 from schemas.schemas import ProductOut
 from services.translation import translate_product_to_arabic
-import shutil, os, uuid
+from services.cloudinary_upload import upload_product_image
+import uuid
 
 router = APIRouter(prefix="/api/products", tags=["products"])
-
-UPLOAD_DIR = "uploads/products"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.get("/", response_model=List[ProductOut])
 def list_products(
@@ -40,7 +38,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     return product
 
 @router.post("/", response_model=ProductOut)
-def create_product(
+async def create_product(
     name: str = Form(...),
     description: Optional[str] = Form(None),
     price: float = Form(...),
@@ -60,10 +58,8 @@ def create_product(
     if image:
         ext = image.filename.split(".")[-1]
         filename = f"{uuid.uuid4()}.{ext}"
-        filepath = os.path.join(UPLOAD_DIR, filename)
-        with open(filepath, "wb") as f:
-            shutil.copyfileobj(image.file, f)
-        image_url = f"/uploads/products/{filename}"
+        file_bytes = await image.read()
+        image_url = upload_product_image(file_bytes, filename)
 
     product = Product(
         seller_id=seller.id,
@@ -98,7 +94,7 @@ def create_product(
     return product
 
 @router.put("/{product_id}", response_model=ProductOut)
-def update_product(
+async def update_product(
     product_id: int,
     name: Optional[str] = Form(None),
     name_ar: Optional[str] = Form(None),
@@ -145,10 +141,8 @@ def update_product(
     if image:
         ext = image.filename.split(".")[-1]
         filename = f"{uuid.uuid4()}.{ext}"
-        filepath = os.path.join(UPLOAD_DIR, filename)
-        with open(filepath, "wb") as f:
-            shutil.copyfileobj(image.file, f)
-        product.image_url = f"/uploads/products/{filename}"
+        file_bytes = await image.read()
+        product.image_url = upload_product_image(file_bytes, filename)
 
     db.commit()
     db.refresh(product)
