@@ -48,6 +48,10 @@ class SellerProfile(Base):
     rating = Column(Float, default=0.0)
     total_orders = Column(Integer, default=0)
     commission_rate = Column(Float, default=12.0)
+    available_days = Column(String, nullable=True)    # "0,1,2,3,4,5,6" Mon=0 Sun=6
+    available_from = Column(String, nullable=True)    # "09:00"
+    available_until = Column(String, nullable=True)   # "21:00"
+    accepting_orders = Column(Boolean, default=True)  # manual on/off toggle
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     user = relationship("User", back_populates="seller_profile")
     products = relationship("Product", back_populates="seller")

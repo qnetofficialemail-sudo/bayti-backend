@@ -1,76 +1,96 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 from core.database import get_db
-from core.auth import get_current_user, get_current_admin
-from models.user import SellerProfile, User
-from schemas.schemas import SellerProfileCreate, SellerProfileOut
-import shutil, os, uuid
+from core.auth import get_current_user, get_current_seller
+from models.user import SellerProfile
+from schemas.schemas import SellerProfileOut, SellerProfileCreate, SellerScheduleUpdate
+from datetime import datetime
+import pytz
 
 router = APIRouter(prefix="/api/sellers", tags=["sellers"])
 
-UPLOAD_DIR = "uploads/logos"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+def is_seller_open(seller: SellerProfile) -> dict:
+    """Check if seller is currently accepting orders based on schedule."""
+    if not seller.accepting_orders:
+        return {"is_open": False, "reason": "closed", "message": "Not accepting orders today"}
+
+    if not seller.available_days and not seller.available_from:
+        return {"is_open": True, "reason": "always_open", "message": ""}
+
+    # Check in UAE time (UTC+4)
+    uae_tz = pytz.timezone("Asia/Dubai")
+    now = datetime.now(uae_tz)
+    weekday = now.weekday()  # 0=Mon, 6=Sun
+    current_time = now.strftime("%H:%M")
+
+    # Check day
+    if seller.available_days:
+        allowed_days = [int(d.strip()) for d in seller.available_days.split(",") if d.strip()]
+        if weekday not in allowed_days:
+            day_names = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+            allowed_names = [day_names[d] for d in sorted(allowed_days)]
+            return {"is_open": False, "reason": "wrong_day", "message": f"Available: {', '.join(allowed_names)}"}
+
+    # Check time
+    if seller.available_from and seller.available_until:
+        if not (seller.available_from <= current_time <= seller.available_until):
+            return {"is_open": False, "reason": "outside_hours",
+                    "message": f"Opens {seller.available_from} – {seller.available_until}"}
+
+    return {"is_open": True, "reason": "open", "message": ""}
 
 @router.get("/", response_model=List[SellerProfileOut])
-def list_sellers(area: Optional[str] = None, db: Session = Depends(get_db)):
-    query = db.query(SellerProfile).filter(SellerProfile.is_approved == True)
-    if area:
-        query = query.filter(SellerProfile.area.ilike(f"%{area}%"))
-    return query.order_by(SellerProfile.rating.desc()).all()
+def list_sellers(db: Session = Depends(get_db)):
+    return db.query(SellerProfile).filter(SellerProfile.is_approved == True).all()
 
-@router.get("/{seller_id}", response_model=SellerProfileOut)
-def get_seller(seller_id: int, db: Session = Depends(get_db)):
+@router.get("/{seller_id}/status")
+def seller_status(seller_id: int, db: Session = Depends(get_db)):
     seller = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
     if not seller:
         raise HTTPException(status_code=404, detail="Seller not found")
+    return is_seller_open(seller)
+
+@router.patch("/schedule", response_model=SellerProfileOut)
+def update_schedule(
+    data: SellerScheduleUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_seller)
+):
+    seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller profile not found")
+
+    if data.available_days is not None:
+        seller.available_days = data.available_days
+    if data.available_from is not None:
+        seller.available_from = data.available_from
+    if data.available_until is not None:
+        seller.available_until = data.available_until
+    if data.accepting_orders is not None:
+        seller.accepting_orders = data.accepting_orders
+
+    db.commit()
+    db.refresh(seller)
     return seller
 
-@router.post("/profile", response_model=SellerProfileOut)
+@router.post("/", response_model=SellerProfileOut)
 def create_seller_profile(
-    shop_name: str = Form(...),
-    description: Optional[str] = Form(None),
-    area: str = Form(...),
-    city: str = Form("Dubai"),
-    logo: Optional[UploadFile] = File(None),
+    data: SellerProfileCreate,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    if current_user.role not in ("seller", "admin"):
-        raise HTTPException(status_code=403, detail="Only sellers can create a profile")
-
     existing = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Seller profile already exists")
-
-    logo_url = None
-    if logo:
-        ext = logo.filename.split(".")[-1]
-        filename = f"{uuid.uuid4()}.{ext}"
-        filepath = os.path.join(UPLOAD_DIR, filename)
-        with open(filepath, "wb") as f:
-            shutil.copyfileobj(logo.file, f)
-        logo_url = f"/uploads/logos/{filename}"
-
-    profile = SellerProfile(
+    seller = SellerProfile(
         user_id=current_user.id,
-        shop_name=shop_name,
-        description=description,
-        area=area,
-        city=city,
-        logo_url=logo_url,
-        is_approved=False,
+        shop_name=data.shop_name,
+        description=data.description,
+        area=data.area,
+        city=data.city,
     )
-    db.add(profile)
+    db.add(seller)
     db.commit()
-    db.refresh(profile)
-    return profile
-
-@router.patch("/{seller_id}/approve")
-def approve_seller(seller_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
-    seller = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
-    if not seller:
-        raise HTTPException(status_code=404, detail="Seller not found")
-    seller.is_approved = True
-    db.commit()
-    return {"message": f"{seller.shop_name} approved"}
+    db.refresh(seller)
+    return seller

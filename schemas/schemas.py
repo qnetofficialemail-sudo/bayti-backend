@@ -45,9 +45,19 @@ class SellerProfileOut(BaseModel):
     is_approved: bool
     rating: float
     total_orders: int
+    available_days: Optional[str] = None
+    available_from: Optional[str] = None
+    available_until: Optional[str] = None
+    accepting_orders: bool = True
     user: UserOut
     class Config:
         from_attributes = True
+
+class SellerScheduleUpdate(BaseModel):
+    available_days: Optional[str] = None
+    available_from: Optional[str] = None
+    available_until: Optional[str] = None
+    accepting_orders: Optional[bool] = None
 
 class CategoryOut(BaseModel):
     id: int

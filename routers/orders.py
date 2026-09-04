@@ -6,6 +6,7 @@ from core.auth import get_current_user
 from models.user import Order, OrderItem, Product, SellerProfile
 from schemas.schemas import OrderCreate, OrderOut
 from services.whatsapp import notify_seller_new_order
+from routers.sellers import is_seller_open
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 
@@ -19,6 +20,11 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
     seller = db.query(SellerProfile).filter(SellerProfile.id == data.seller_id).first()
     if not seller or not seller.is_approved:
         raise HTTPException(status_code=404, detail="Seller not found or not approved")
+
+    # Check seller schedule
+    status = is_seller_open(seller)
+    if not status["is_open"]:
+        raise HTTPException(status_code=400, detail=f"Seller is not accepting orders right now. {status['message']}")
 
     total = 0.0
     order_items = []
