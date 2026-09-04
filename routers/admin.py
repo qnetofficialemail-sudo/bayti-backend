@@ -84,6 +84,9 @@ def approve_seller(seller_id: int, db: Session = Depends(get_db), current_user=D
     if not seller:
         raise HTTPException(status_code=404, detail="Seller not found")
     seller.is_approved = True
+    # Re-enable all products when seller is approved/re-enabled
+    for product in seller.products:
+        product.is_available = True
     db.commit()
     return {"message": f"{seller.shop_name} approved"}
 
