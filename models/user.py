@@ -27,8 +27,6 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(String, default="buyer")
     is_active = Column(Boolean, default=True)
-    saved_address = Column(String, nullable=True)
-    saved_area = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     seller_profile = relationship("SellerProfile", back_populates="user", uselist=False)
     orders = relationship("Order", back_populates="buyer")
