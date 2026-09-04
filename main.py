@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from core.database import engine, Base, SessionLocal
 from models.user import User, SellerProfile, Category, Product, Order, OrderItem
-from routers import auth, products, orders, sellers, ai, translation, admin
+from routers import auth, products, orders, sellers, ai, translation, admin, reviews
 from core.auth import hash_password
 import os
 
