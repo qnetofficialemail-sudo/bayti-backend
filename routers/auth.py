@@ -59,3 +59,23 @@ def get_me(current_user: User = Depends(__import__('core.auth', fromlist=['get_c
         "role": current_user.role,
         "phone": current_user.phone,
     }
+
+
+@router.get("/me/address")
+def get_saved_address(current_user=Depends(get_current_user)):
+    return {
+        "saved_address": current_user.saved_address,
+        "saved_area": current_user.saved_area,
+    }
+
+@router.patch("/me/address")
+def save_address(
+    saved_address: str,
+    saved_area: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    current_user.saved_address = saved_address
+    current_user.saved_area = saved_area
+    db.commit()
+    return {"message": "Address saved"}
