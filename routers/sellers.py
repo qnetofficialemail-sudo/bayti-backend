@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Form
+from fastapi import APIRouter, Depends, HTTPException, Form, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from core.database import get_db
@@ -101,6 +101,14 @@ async def create_seller_profile_form(
     description: Optional[str] = Form(None),
     area: str = Form(...),
     city: str = Form("Dubai"),
+    whatsapp_number: Optional[str] = Form(None),
+    instagram_handle: Optional[str] = Form(None),
+    min_order_amount: Optional[float] = Form(None),
+    delivery_type: Optional[str] = Form("bayti"),
+    categories_offered: Optional[str] = Form(None),
+    sample_image_1: Optional[UploadFile] = File(None),
+    sample_image_2: Optional[UploadFile] = File(None),
+    sample_image_3: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
@@ -108,6 +116,21 @@ async def create_seller_profile_form(
     existing = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Seller profile already exists")
+
+    # Upload sample images to Cloudinary
+    from services.cloudinary_upload import upload_seller_logo
+    import uuid
+
+    def upload_sample(img):
+        if not img:
+            return None
+        try:
+            data = img.file.read()
+            ext = img.filename.split(".")[-1]
+            return upload_seller_logo(data, f"sample_{uuid.uuid4()}.{ext}")
+        except:
+            return None
+
     seller = SellerProfile(
         user_id=current_user.id,
         shop_name=shop_name,
@@ -115,6 +138,14 @@ async def create_seller_profile_form(
         area=area,
         city=city,
         accepting_orders=True,
+        whatsapp_number=whatsapp_number,
+        instagram_handle=instagram_handle,
+        min_order_amount=min_order_amount,
+        delivery_type=delivery_type,
+        categories_offered=categories_offered,
+        sample_image_1=upload_sample(sample_image_1),
+        sample_image_2=upload_sample(sample_image_2),
+        sample_image_3=upload_sample(sample_image_3),
     )
     db.add(seller)
     db.commit()

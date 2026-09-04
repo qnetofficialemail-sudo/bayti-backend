@@ -48,10 +48,19 @@ class SellerProfile(Base):
     rating = Column(Float, default=0.0)
     total_orders = Column(Integer, default=0)
     commission_rate = Column(Float, default=12.0)
-    available_days = Column(String, nullable=True)    # "0,1,2,3,4,5,6" Mon=0 Sun=6
-    available_from = Column(String, nullable=True)    # "09:00"
-    available_until = Column(String, nullable=True)   # "21:00"
-    accepting_orders = Column(Boolean, default=True)  # manual on/off toggle
+    available_days = Column(String, nullable=True)
+    available_from = Column(String, nullable=True)
+    available_until = Column(String, nullable=True)
+    accepting_orders = Column(Boolean, default=True)
+    # New seller profile fields
+    whatsapp_number = Column(String, nullable=True)
+    instagram_handle = Column(String, nullable=True)
+    min_order_amount = Column(Float, nullable=True)
+    delivery_type = Column(String, nullable=True)     # "self" or "bayti"
+    categories_offered = Column(String, nullable=True) # comma-separated category ids
+    sample_image_1 = Column(String, nullable=True)
+    sample_image_2 = Column(String, nullable=True)
+    sample_image_3 = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     user = relationship("User", back_populates="seller_profile")
     products = relationship("Product", back_populates="seller")
