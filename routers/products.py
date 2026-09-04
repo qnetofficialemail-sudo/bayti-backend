@@ -16,6 +16,7 @@ def list_products(
     category_id: Optional[int] = None,
     area: Optional[str] = None,
     search: Optional[str] = None,
+    seller_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
     query = db.query(Product).join(SellerProfile).filter(
@@ -28,6 +29,8 @@ def list_products(
         query = query.filter(SellerProfile.area.ilike(f"%{area}%"))
     if search:
         query = query.filter(Product.name.ilike(f"%{search}%"))
+    if seller_id:
+        query = query.filter(SellerProfile.id == seller_id)
     return query.order_by(Product.created_at.desc()).all()
 
 @router.get("/{product_id}", response_model=ProductOut)

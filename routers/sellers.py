@@ -51,6 +51,37 @@ def seller_status(seller_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Seller not found")
     return is_seller_open(seller)
 
+@router.get("/{seller_id}/public")
+def get_seller_public(seller_id: int, db: Session = Depends(get_db)):
+    """Public seller profile - hides contact details."""
+    seller = db.query(SellerProfile).filter(
+        SellerProfile.id == seller_id,
+        SellerProfile.is_approved == True
+    ).first()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Shop not found")
+    return {
+        "id": seller.id,
+        "shop_name": seller.shop_name,
+        "description": seller.description,
+        "area": seller.area,
+        "city": seller.city,
+        "logo_url": seller.logo_url,
+        "badge": seller.badge,
+        "rating": seller.rating,
+        "total_orders": seller.total_orders,
+        "categories_offered": seller.categories_offered,
+        "sample_image_1": seller.sample_image_1,
+        "sample_image_2": seller.sample_image_2,
+        "sample_image_3": seller.sample_image_3,
+        "min_order_amount": seller.min_order_amount,
+        "delivery_type": seller.delivery_type,
+        "available_from": seller.available_from,
+        "available_until": seller.available_until,
+        "available_days": seller.available_days,
+        "accepting_orders": seller.accepting_orders,
+    }
+
 @router.patch("/schedule", response_model=SellerProfileOut)
 def update_schedule(
     data: SellerScheduleUpdate,
