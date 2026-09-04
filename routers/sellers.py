@@ -82,6 +82,33 @@ def get_seller_public(seller_id: int, db: Session = Depends(get_db)):
         "accepting_orders": seller.accepting_orders,
     }
 
+
+@router.patch("/profile/edit")
+async def edit_seller_profile(
+    shop_name: Optional[str] = None,
+    description: Optional[str] = None,
+    area: Optional[str] = None,
+    city: Optional[str] = None,
+    whatsapp_number: Optional[str] = None,
+    instagram_handle: Optional[str] = None,
+    min_order_amount: Optional[float] = None,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_seller)
+):
+    seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller profile not found")
+    if shop_name is not None: seller.shop_name = shop_name
+    if description is not None: seller.description = description
+    if area is not None: seller.area = area
+    if city is not None: seller.city = city
+    if whatsapp_number is not None: seller.whatsapp_number = whatsapp_number
+    if instagram_handle is not None: seller.instagram_handle = instagram_handle
+    if min_order_amount is not None: seller.min_order_amount = min_order_amount
+    db.commit()
+    db.refresh(seller)
+    return seller
+
 @router.patch("/schedule", response_model=SellerProfileOut)
 def update_schedule(
     data: SellerScheduleUpdate,
