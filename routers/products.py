@@ -101,7 +101,9 @@ def create_product(
 def update_product(
     product_id: int,
     name: Optional[str] = Form(None),
+    name_ar: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    description_ar: Optional[str] = Form(None),
     price: Optional[float] = Form(None),
     is_available: Optional[bool] = Form(None),
     preparation_time: Optional[int] = Form(None),
@@ -118,14 +120,18 @@ def update_product(
 
     if name:
         product.name = name
-        try:
-            result = translate_product_to_arabic(name, description or product.description or name)
-            if result["success"]:
-                product.name_ar = result["name_ar"]
-                product.description_ar = result["description_ar"]
-        except Exception as e:
-            print(f"Re-translation failed: {e}")
+        # Only auto-translate if no manual Arabic provided
+        if not name_ar:
+            try:
+                result = translate_product_to_arabic(name, description or product.description or name)
+                if result["success"]:
+                    product.name_ar = result["name_ar"]
+                    product.description_ar = result["description_ar"]
+            except Exception as e:
+                print(f"Re-translation failed: {e}")
+    if name_ar is not None: product.name_ar = name_ar
     if description is not None: product.description = description
+    if description_ar is not None: product.description_ar = description_ar
     if price is not None: product.price = price
     if is_available is not None: product.is_available = is_available
     if preparation_time is not None: product.preparation_time = preparation_time
