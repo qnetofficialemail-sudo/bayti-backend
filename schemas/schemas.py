@@ -97,7 +97,6 @@ class ProductOut(BaseModel):
     preparation_time: int
     stock_quantity: int = -1
     track_stock: int = 0
-    created_at: Optional[str] = None
     category: Optional[CategoryOut]
     seller: Optional[SellerProfileOut] = None
     class Config:
