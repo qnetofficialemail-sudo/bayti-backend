@@ -29,6 +29,8 @@ app.include_router(orders.router)
 app.include_router(sellers.router)
 app.include_router(ai.router)
 app.include_router(translation.router)
+app.include_router(reviews.router)
+app.include_router(reviews.router)
 app.include_router(admin.router)
 
 def seed_data():
