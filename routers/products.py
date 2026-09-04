@@ -28,7 +28,13 @@ def list_products(
     if area:
         query = query.filter(SellerProfile.area.ilike(f"%{area}%"))
     if search:
-        query = query.filter(Product.name.ilike(f"%{search}%"))
+        from sqlalchemy import or_
+        query = query.filter(or_(
+            Product.name.ilike(f"%{search}%"),
+            Product.name_ar.ilike(f"%{search}%"),
+            Product.description.ilike(f"%{search}%"),
+            Product.description_ar.ilike(f"%{search}%"),
+        ))
     if seller_id:
         query = query.filter(SellerProfile.id == seller_id)
     return query.order_by(Product.created_at.desc()).all()
