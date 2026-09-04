@@ -280,3 +280,101 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user=Depend
     db.delete(user)
     db.commit()
     return {"message": "User deleted successfully"}
+
+
+# ── Product Moderation ──
+@router.get("/products")
+def list_all_products(db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
+    products = db.query(Product).order_by(Product.created_at.desc()).all()
+    return [{
+        "id": p.id,
+        "name": p.name,
+        "name_ar": p.name_ar,
+        "price": p.price,
+        "is_available": p.is_available,
+        "image_url": p.image_url,
+        "seller_id": p.seller_id,
+        "shop_name": p.seller.shop_name if p.seller else None,
+        "category": p.category.name if p.category else None,
+        "created_at": p.created_at,
+    } for p in products]
+
+@router.patch("/products/{product_id}/toggle")
+def toggle_product(product_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    product.is_available = not product.is_available
+    db.commit()
+    return {"id": product_id, "is_available": product.is_available}
+
+@router.delete("/products/{product_id}")
+def delete_product_admin(product_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
+    from models.user import OrderItem
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    db.query(OrderItem).filter(OrderItem.product_id == product_id).delete(synchronize_session=False)
+    db.delete(product)
+    db.commit()
+    return {"message": "Product deleted"}
+
+# ── CSV Export ──
+@router.get("/export/sellers")
+def export_sellers(db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
+    from fastapi.responses import StreamingResponse
+    import csv, io
+    sellers = db.query(SellerProfile).all()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID","Shop Name","Owner","Email","Phone","Area","City","Status","Rating","Orders","Commission","WhatsApp","Instagram","Min Order","Delivery"])
+    for s in sellers:
+        writer.writerow([s.id, s.shop_name, s.user.full_name, s.user.email, s.user.phone,
+            s.area, s.city, "Approved" if s.is_approved else "Pending",
+            s.rating, s.total_orders, f"{s.commission_rate}%",
+            s.whatsapp_number or "", s.instagram_handle or "",
+            s.min_order_amount or "", s.delivery_type or ""])
+    output.seek(0)
+    return StreamingResponse(iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=bayti_sellers.csv"})
+
+@router.get("/export/orders")
+def export_orders(db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
+    from fastapi.responses import StreamingResponse
+    import csv, io
+    orders = db.query(Order).order_by(Order.created_at.desc()).all()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID","Date","Seller","Buyer","Area","Status","Subtotal","Delivery","Total","Commission"])
+    for o in orders:
+        writer.writerow([o.id, o.created_at.strftime("%Y-%m-%d %H:%M"),
+            o.seller.shop_name if o.seller else "",
+            o.buyer.full_name if o.buyer else "",
+            o.delivery_area, o.status,
+            o.total_amount, o.delivery_fee,
+            round(o.total_amount + o.delivery_fee, 2),
+            o.commission_amount])
+    output.seek(0)
+    return StreamingResponse(iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=bayti_orders.csv"})
+
+# ── Revenue Stats for Dashboard ──
+@router.get("/revenue/daily")
+def daily_revenue(db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
+    from sqlalchemy import cast, Date
+    results = db.execute(
+        __import__('sqlalchemy').text("""
+            SELECT DATE(created_at) as day,
+                   COUNT(*) as orders,
+                   SUM(total_amount + delivery_fee) as revenue,
+                   SUM(commission_amount) as commission
+            FROM orders
+            WHERE created_at >= NOW() - INTERVAL '30 days'
+            GROUP BY DATE(created_at)
+            ORDER BY day DESC
+            LIMIT 30
+        """)
+    ).fetchall()
+    return [{"day": str(r[0]), "orders": r[1], "revenue": round(float(r[2] or 0), 2), "commission": round(float(r[3] or 0), 2)} for r in results]
