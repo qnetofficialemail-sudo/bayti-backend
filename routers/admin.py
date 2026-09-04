@@ -378,3 +378,51 @@ def daily_revenue(db: Session = Depends(get_db), current_user=Depends(get_curren
         """)
     ).fetchall()
     return [{"day": str(r[0]), "orders": r[1], "revenue": round(float(r[2] or 0), 2), "commission": round(float(r[3] or 0), 2)} for r in results]
+
+
+# ── Cook of the Week ──
+@router.get("/cook-of-week")
+def get_cook_of_week(db: Session = Depends(get_db)):
+    """Returns the top performing approved seller based on rating + recent orders."""
+    from sqlalchemy import desc
+    sellers = db.query(SellerProfile).filter(
+        SellerProfile.is_approved == True,
+        SellerProfile.rating > 0,
+    ).order_by(desc(SellerProfile.rating), desc(SellerProfile.total_orders)).all()
+    
+    if not sellers:
+        return None
+    
+    # Pick based on week number so it changes weekly
+    import datetime
+    week_num = datetime.datetime.now().isocalendar()[1]
+    seller = sellers[week_num % len(sellers)]
+    
+    # Get their best product (highest price = premium)
+    best_product = db.query(Product).filter(
+        Product.seller_id == seller.id,
+        Product.is_available == True
+    ).order_by(desc(Product.price)).first()
+    
+    return {
+        "id": seller.id,
+        "shop_name": seller.shop_name,
+        "description": seller.description,
+        "area": seller.area,
+        "city": seller.city,
+        "rating": seller.rating,
+        "total_orders": seller.total_orders,
+        "badge": seller.badge,
+        "sample_image_1": seller.sample_image_1,
+        "sample_image_2": seller.sample_image_2,
+        "whatsapp_number": seller.whatsapp_number,
+        "instagram_handle": seller.instagram_handle,
+        "best_product": {
+            "id": best_product.id,
+            "name": best_product.name,
+            "name_ar": best_product.name_ar,
+            "price": best_product.price,
+            "image_url": best_product.image_url,
+            "description": best_product.description,
+        } if best_product else None,
+    }
