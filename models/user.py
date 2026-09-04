@@ -124,19 +124,6 @@ class Review(Base):
     seller = relationship("SellerProfile", foreign_keys=[seller_id])
     order = relationship("Order", foreign_keys=[order_id])
 
-class Review(Base):
-    __tablename__ = "reviews"
-    id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), unique=True)
-    buyer_id = Column(Integer, ForeignKey("users.id"))
-    seller_id = Column(Integer, ForeignKey("seller_profiles.id"))
-    rating = Column(Integer, nullable=False)  # 1-5
-    comment = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    buyer = relationship("User", foreign_keys=[buyer_id])
-    seller = relationship("SellerProfile", foreign_keys=[seller_id])
-    order = relationship("Order", foreign_keys=[order_id])
-
 class OrderItem(Base):
     __tablename__ = "order_items"
     id = Column(Integer, primary_key=True, index=True)
