@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from core.database import get_db
-from core.auth import get_current_user
+from core.auth import get_current_user, get_current_seller
 from models.user import Order, OrderItem, Product, SellerProfile
 from schemas.schemas import OrderCreate, OrderOut
 from services.whatsapp import notify_seller_new_order
