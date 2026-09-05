@@ -91,6 +91,7 @@ class Product(Base):
     image_url = Column(String, nullable=True)
     is_available = Column(Boolean, default=True)
     preparation_time = Column(Integer, default=60)
+    time_unit = Column(String, default="minutes")  # minutes, hours, days
     stock_quantity = Column(Integer, default=-1)
     track_stock = Column(Integer, default=0)
     is_featured = Column(Boolean, default=False)
