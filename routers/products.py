@@ -139,9 +139,15 @@ async def update_product(
     price: Optional[float] = Form(None),
     is_available: Optional[bool] = Form(None),
     preparation_time: Optional[int] = Form(None),
+    time_unit: Optional[str] = Form(None),
     stock_quantity: Optional[int] = Form(None),
     track_stock: Optional[bool] = Form(None),
+    primary_image_index: Optional[int] = Form(None),
     image: Optional[UploadFile] = File(None),
+    image_2: Optional[UploadFile] = File(None),
+    image_3: Optional[UploadFile] = File(None),
+    image_4: Optional[UploadFile] = File(None),
+    image_5: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_seller)
 ):
@@ -179,6 +185,15 @@ async def update_product(
         filename = f"{uuid.uuid4()}.{ext}"
         file_bytes = await image.read()
         product.image_url = upload_product_image(file_bytes, filename)
+
+    if time_unit is not None: product.time_unit = time_unit
+    if primary_image_index is not None: product.primary_image_index = primary_image_index
+    for i, extra_img in enumerate([image_2, image_3, image_4, image_5], 2):
+        if extra_img and extra_img.filename:
+            ext2 = extra_img.filename.split(".")[-1]
+            fn2 = f"product_extra_{product.id}_{i}_{ext2}"
+            fb2 = await extra_img.read()
+            setattr(product, f"image_{i}", upload_product_image(fb2, fn2))
 
     db.commit()
     db.refresh(product)
