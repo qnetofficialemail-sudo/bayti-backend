@@ -99,6 +99,7 @@ class Product(Base):
     seller = relationship("SellerProfile", back_populates="products")
     category = relationship("Category", back_populates="products")
     order_items = relationship("OrderItem", back_populates="product")
+    variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
 
 class Order(Base):
     __tablename__ = "orders"
@@ -141,6 +142,7 @@ class OrderItem(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Float, nullable=False)
+    selected_variants = Column(Text, nullable=True)  # JSON: {"Size":"M","Color":"Black"}
     order = relationship("Order", back_populates="items")
     product = relationship("Product", back_populates="order_items")
 
@@ -161,3 +163,14 @@ class SellerApplication(Base):
     invite_token = Column(String, nullable=True, unique=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ProductVariant(Base):
+    __tablename__ = "product_variants"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    name = Column(String, nullable=False)        # e.g. "Size", "Color", "Scent"
+    name_ar = Column(String, nullable=True)      # Arabic name
+    options = Column(Text, nullable=False)       # JSON: [{"label":"S","price_adj":0},{"label":"M","price_adj":5}]
+    is_required = Column(Boolean, default=True)
+    product = relationship("Product", back_populates="variants")

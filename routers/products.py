@@ -191,3 +191,60 @@ def delete_product(product_id: int, db: Session = Depends(get_db), current_user=
     db.delete(product)
     db.commit()
     return {"message": "Product deleted"}
+
+
+# ── Product Variants ──
+@router.get("/{product_id}/variants")
+def get_product_variants(product_id: int, db: Session = Depends(get_db)):
+    from models.user import ProductVariant
+    variants = db.query(ProductVariant).filter(ProductVariant.product_id == product_id).all()
+    return [{"id": v.id, "name": v.name, "name_ar": v.name_ar, "options": v.options, "is_required": v.is_required} for v in variants]
+
+
+@router.post("/{product_id}/variants")
+def add_product_variant(
+    product_id: int,
+    name: str = Form(...),
+    name_ar: str = Form(""),
+    options: str = Form(...),  # JSON string
+    is_required: bool = Form(True),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_seller)
+):
+    from models.user import ProductVariant
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+    if not seller or product.seller_id != seller.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    variant = ProductVariant(
+        product_id=product_id,
+        name=name,
+        name_ar=name_ar,
+        options=options,
+        is_required=is_required,
+    )
+    db.add(variant)
+    db.commit()
+    db.refresh(variant)
+    return {"id": variant.id, "name": variant.name, "options": variant.options}
+
+
+@router.delete("/{product_id}/variants/{variant_id}")
+def delete_product_variant(
+    product_id: int,
+    variant_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_seller)
+):
+    from models.user import ProductVariant
+    variant = db.query(ProductVariant).filter(
+        ProductVariant.id == variant_id,
+        ProductVariant.product_id == product_id
+    ).first()
+    if not variant:
+        raise HTTPException(status_code=404, detail="Variant not found")
+    db.delete(variant)
+    db.commit()
+    return {"message": "Variant deleted"}
