@@ -59,6 +59,11 @@ async def create_product(
     preparation_time: int = Form(60),
     time_unit: str = Form("minutes"),
     stock_quantity: int = Form(-1),
+    image_2: Optional[UploadFile] = File(None),
+    image_3: Optional[UploadFile] = File(None),
+    image_4: Optional[UploadFile] = File(None),
+    image_5: Optional[UploadFile] = File(None),
+    primary_image_index: int = Form(0),
     track_stock: bool = Form(False),
     image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
@@ -75,6 +80,17 @@ async def create_product(
         file_bytes = await image.read()
         image_url = upload_product_image(file_bytes, filename)
 
+    # Upload additional images
+    extra_urls = []
+    for extra_img in [image_2, image_3, image_4, image_5]:
+        if extra_img and extra_img.filename:
+            ext2 = extra_img.filename.split(".")[-1]
+            fn2 = f"product_extra_{extra_img.filename.rsplit('.', 1)[0]}"
+            fb2 = await extra_img.read()
+            extra_urls.append(upload_product_image(fb2, fn2))
+        else:
+            extra_urls.append(None)
+
     product = Product(
         seller_id=seller.id,
         name=name,
@@ -83,6 +99,11 @@ async def create_product(
         category_id=category_id,
         preparation_time=preparation_time,
         time_unit=time_unit,
+        image_2=extra_urls[0] if extra_urls else None,
+        image_3=extra_urls[1] if len(extra_urls) > 1 else None,
+        image_4=extra_urls[2] if len(extra_urls) > 2 else None,
+        image_5=extra_urls[3] if len(extra_urls) > 3 else None,
+        primary_image_index=primary_image_index,
         image_url=image_url,
         stock_quantity=stock_quantity if track_stock else -1,
         track_stock=1 if track_stock else 0,
@@ -250,3 +271,19 @@ def delete_product_variant(
     db.delete(variant)
     db.commit()
     return {"message": "Variant deleted"}
+
+
+@router.patch("/{product_id}/primary-image")
+def set_primary_image(
+    product_id: int,
+    index: int = 0,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_seller)
+):
+    seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+    product = db.query(Product).filter(Product.id == product_id, Product.seller_id == seller.id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    product.primary_image_index = index
+    db.commit()
+    return {"primary_image_index": index}
