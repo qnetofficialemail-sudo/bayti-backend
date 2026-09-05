@@ -86,13 +86,16 @@ def get_seller_public(seller_id: int, db: Session = Depends(get_db)):
 
 @router.patch("/profile/edit")
 async def edit_seller_profile(
-    shop_name: Optional[str] = None,
-    description: Optional[str] = None,
-    area: Optional[str] = None,
-    city: Optional[str] = None,
-    whatsapp_number: Optional[str] = None,
-    instagram_handle: Optional[str] = None,
-    min_order_amount: Optional[float] = None,
+    shop_name: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    area: Optional[str] = Form(None),
+    city: Optional[str] = Form(None),
+    whatsapp_number: Optional[str] = Form(None),
+    instagram_handle: Optional[str] = Form(None),
+    min_order_amount: Optional[float] = Form(None),
+    sample_image_1: Optional[UploadFile] = File(None),
+    sample_image_2: Optional[UploadFile] = File(None),
+    sample_image_3: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_seller)
 ):
