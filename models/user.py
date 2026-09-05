@@ -89,6 +89,11 @@ class Product(Base):
     description_ar = Column(Text, nullable=True)
     price = Column(Float, nullable=False)
     image_url = Column(String, nullable=True)
+    image_2 = Column(String, nullable=True)
+    image_3 = Column(String, nullable=True)
+    image_4 = Column(String, nullable=True)
+    image_5 = Column(String, nullable=True)
+    primary_image_index = Column(Integer, default=0)
     is_available = Column(Boolean, default=True)
     preparation_time = Column(Integer, default=60)
     time_unit = Column(String, default="minutes")  # minutes, hours, days
