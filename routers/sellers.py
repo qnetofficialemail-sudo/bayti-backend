@@ -109,6 +109,12 @@ async def edit_seller_profile(
     if whatsapp_number is not None: seller.whatsapp_number = whatsapp_number
     if instagram_handle is not None: seller.instagram_handle = instagram_handle
     if min_order_amount is not None: seller.min_order_amount = min_order_amount
+    from services.cloudinary_upload import upload_seller_logo as _usl
+    for i, img in enumerate([sample_image_1, sample_image_2, sample_image_3], 1):
+        if img and img.filename:
+            fb = await img.read()
+            url = _usl(fb, img.filename)
+            setattr(seller, f"sample_image_{i}", url)
     db.commit()
     db.refresh(seller)
     return seller
