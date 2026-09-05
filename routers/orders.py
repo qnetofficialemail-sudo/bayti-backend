@@ -170,3 +170,19 @@ def cancel_order(order_id: int, db: Session = Depends(get_db), current_user=Depe
     order.status = "cancelled"
     db.commit()
     return {"message": "Order cancelled successfully"}
+
+
+@router.patch("/{order_id}/reject")
+def reject_order(order_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_seller)):
+    """Seller rejects/cancels an order."""
+    seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found")
+    order = db.query(Order).filter(Order.id == order_id, Order.seller_id == seller.id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.status in ["delivered", "cancelled"]:
+        raise HTTPException(status_code=400, detail="Cannot cancel a delivered or already cancelled order")
+    order.status = "cancelled"
+    db.commit()
+    return {"message": "Order rejected", "order_id": order_id, "status": "cancelled"}
