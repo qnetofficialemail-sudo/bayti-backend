@@ -69,6 +69,7 @@ def get_seller_public(seller_id: int, db: Session = Depends(get_db)):
         "logo_url": seller.logo_url,
         "badge": seller.badge,
         "rating": seller.rating,
+        "avg_response_minutes": seller.avg_response_minutes,
         "total_orders": seller.total_orders,
         "categories_offered": seller.categories_offered,
         "sample_image_1": seller.sample_image_1,

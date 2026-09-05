@@ -151,6 +151,36 @@ def update_order_status(order_id: int, status: str, db: Session = Depends(get_db
     if status not in allowed:
         raise HTTPException(status_code=400, detail=f"Cannot move from {order.status} to {status}")
     order.status = status
+
+    # Track response time when seller confirms
+    if status == "confirmed" and order.confirmed_at is None:
+        from datetime import datetime, timezone as tz
+        now = datetime.now(tz.utc)
+        order.confirmed_at = now
+        if order.created_at:
+            created = order.created_at
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=tz.utc)
+            diff_minutes = (now - created).total_seconds() / 60
+            seller_obj = db.query(SellerProfile).filter(SellerProfile.id == order.seller_id).first()
+            if seller_obj:
+                confirmed_orders = db.query(Order).filter(
+                    Order.seller_id == seller_obj.id,
+                    Order.confirmed_at != None
+                ).order_by(Order.confirmed_at.desc()).limit(19).all()
+                times = []
+                for co in confirmed_orders:
+                    if co.created_at and co.confirmed_at:
+                        c = co.created_at
+                        cf = co.confirmed_at
+                        if c.tzinfo is None:
+                            c = c.replace(tzinfo=tz.utc)
+                        if cf.tzinfo is None:
+                            cf = cf.replace(tzinfo=tz.utc)
+                        times.append((cf - c).total_seconds() / 60)
+                times.append(diff_minutes)
+                seller_obj.avg_response_minutes = round(sum(times) / len(times), 1)
+
     db.commit()
     return {"order_id": order_id, "status": order.status}
 
