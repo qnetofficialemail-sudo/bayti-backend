@@ -74,8 +74,6 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
     )
     db.add(order)
     db.flush()
-    for item, product, quantity in items_to_order:
-        product.sold_count = (product.sold_count or 0) + quantity
 
     items_for_notification = []
     for item, product, quantity in order_items:
