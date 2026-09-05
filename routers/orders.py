@@ -77,6 +77,7 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
 
     items_for_notification = []
     for item, product, quantity in order_items:
+        product.sold_count = (product.sold_count or 0) + quantity
         item.order_id = order.id
         db.add(item)
 
