@@ -143,3 +143,21 @@ class OrderItem(Base):
     unit_price = Column(Float, nullable=False)
     order = relationship("Order", back_populates="items")
     product = relationship("Product", back_populates="order_items")
+
+
+class SellerApplication(Base):
+    __tablename__ = "seller_applications"
+    id = Column(Integer, primary_key=True, index=True)
+    full_name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    phone = Column(String, nullable=True)
+    area = Column(String, nullable=False)
+    city = Column(String, default="Dubai")
+    what_they_sell = Column(Text, nullable=False)
+    doc_1_url = Column(Text, nullable=True)
+    doc_2_url = Column(Text, nullable=True)
+    doc_3_url = Column(Text, nullable=True)
+    status = Column(String, default="pending")  # pending, approved, rejected
+    invite_token = Column(String, nullable=True, unique=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

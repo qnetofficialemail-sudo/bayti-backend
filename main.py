@@ -2,8 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from core.database import engine, Base, SessionLocal
-from models.user import User, SellerProfile, Category, Product, Order, OrderItem
+from models.user import User, SellerProfile, Category, Product, Order, OrderItem, SellerApplication
 from routers import auth, products, orders, sellers, ai, translation, admin, reviews
+from routers import applications as applications_router
 from core.auth import hash_password
 import os
 
@@ -32,6 +33,7 @@ app.include_router(translation.router)
 app.include_router(reviews.router)
 app.include_router(reviews.router)
 app.include_router(admin.router)
+app.include_router(applications_router.router)
 
 def seed_data():
     db = SessionLocal()

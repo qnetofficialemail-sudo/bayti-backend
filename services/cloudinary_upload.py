@@ -38,3 +38,14 @@ def upload_seller_logo(file_bytes: bytes, filename: str) -> str:
         ]
     )
     return result["secure_url"]
+
+def upload_application_doc(file_bytes: bytes, filename: str) -> str:
+    """Upload seller application document to Cloudinary (private folder)."""
+    result = cloudinary.uploader.upload(
+        file_bytes,
+        folder="bayti/applications",
+        public_id=filename.rsplit(".", 1)[0],
+        overwrite=False,
+        resource_type="auto",
+    )
+    return result["secure_url"]
