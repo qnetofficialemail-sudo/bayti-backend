@@ -5,3 +5,18 @@ __pycache__/
 uploads/
 *.sqlite
 .DS_Store
+
+# Utility scripts
+fix_*.py
+add_*.py
+write_*.py
+migrate_*.py
+inspect_*.py
+insert_*.py
+prepare_*.py
+update_*.py
+translate_*.py
+redesign_*.py
+rewrite_*.py
+product_*.py
+waitlist_*.py
