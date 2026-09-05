@@ -287,3 +287,20 @@ def set_primary_image(
     product.primary_image_index = index
     db.commit()
     return {"primary_image_index": index}
+
+
+@router.delete("/seller/{product_id}")
+def seller_delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_seller)
+):
+    seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found")
+    product = db.query(Product).filter(Product.id == product_id, Product.seller_id == seller.id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    db.delete(product)
+    db.commit()
+    return {"message": "Product deleted"}

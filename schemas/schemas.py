@@ -94,7 +94,13 @@ class ProductOut(BaseModel):
     description: Optional[str]
     description_ar: Optional[str] = None
     price: float
-    image_url: Optional[str]
+    image_url: Optional[str] = None
+    image_2: Optional[str] = None
+    image_3: Optional[str] = None
+    image_4: Optional[str] = None
+    image_5: Optional[str] = None
+    primary_image_index: int = 0
+    time_unit: Optional[str] = "minutes"
     is_available: bool
     preparation_time: int
     stock_quantity: int = -1
