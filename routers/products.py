@@ -19,9 +19,13 @@ def list_products(
     seller_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
+    from models.user import Category
+    # Get active category IDs
+    active_cat_ids = [c.id for c in db.query(Category.id).filter(Category.is_active == True).all()]
     query = db.query(Product).join(SellerProfile).filter(
         Product.is_available == True,
-        SellerProfile.is_approved == True
+        SellerProfile.is_approved == True,
+        Product.category_id.in_(active_cat_ids)
     )
     if category_id:
         query = query.filter(Product.category_id == category_id)
