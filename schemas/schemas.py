@@ -71,7 +71,9 @@ class CategoryOut(BaseModel):
     id: int
     name: str
     name_ar: Optional[str] = None
-    icon: Optional[str]
+    icon: Optional[str] = None
+    is_active: bool = True
+    sort_order: int = 0
     class Config:
         from_attributes = True
 
@@ -97,6 +99,8 @@ class ProductOut(BaseModel):
     preparation_time: int
     stock_quantity: int = -1
     track_stock: int = 0
+    is_featured: bool = False
+    sold_count: int = 0
     created_at: Optional[datetime] = None
     category: Optional[CategoryOut]
     seller: Optional[SellerProfileOut] = None

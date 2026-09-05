@@ -73,6 +73,8 @@ class Category(Base):
     name = Column(String, unique=True, nullable=False)
     name_ar = Column(Text, nullable=True)
     icon = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    sort_order = Column(Integer, default=0)
     products = relationship("Product", back_populates="category")
 
 class Product(Base):
@@ -90,6 +92,8 @@ class Product(Base):
     preparation_time = Column(Integer, default=60)
     stock_quantity = Column(Integer, default=-1)
     track_stock = Column(Integer, default=0)
+    is_featured = Column(Boolean, default=False)
+    sold_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     seller = relationship("SellerProfile", back_populates="products")
     category = relationship("Category", back_populates="products")
@@ -107,6 +111,7 @@ class Order(Base):
     delivery_fee = Column(Float, default=10.0)
     commission_amount = Column(Float, default=0.0)
     notes = Column(Text, nullable=True)
+    cancel_deadline = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     buyer = relationship("User", back_populates="orders")

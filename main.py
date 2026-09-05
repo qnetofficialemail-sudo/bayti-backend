@@ -107,6 +107,9 @@ def root():
     return {"message": "HomeMarket UAE API", "docs": "/docs"}
 
 @app.get("/api/categories")
-def get_categories(db=__import__('fastapi', fromlist=['Depends']).Depends(__import__('core.database', fromlist=['get_db']).get_db)):
+def get_categories(db=__import__('fastapi', fromlist=['Depends']).Depends(__import__('core.database', fromlist=['get_db']).get_db), show_all: bool = False):
     from models.user import Category
-    return db.query(Category).all()
+    query = db.query(Category)
+    if not show_all:
+        query = query.filter(Category.is_active == True)
+    return query.order_by(Category.sort_order).all()

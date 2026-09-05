@@ -426,3 +426,30 @@ def get_cook_of_week(db: Session = Depends(get_db)):
             "description": best_product.description,
         } if best_product else None,
     }
+
+
+# ── Category Management ──
+@router.get("/categories/manage")
+def list_categories_admin(db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
+    from models.user import Category
+    cats = db.query(Category).order_by(Category.sort_order).all()
+    return [{"id": c.id, "name": c.name, "name_ar": c.name_ar, "icon": c.icon,
+             "is_active": c.is_active, "sort_order": c.sort_order} for c in cats]
+
+@router.patch("/categories/{cat_id}/toggle")
+def toggle_category_active(cat_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
+    from models.user import Category
+    cat = db.query(Category).filter(Category.id == cat_id).first()
+    if not cat: raise HTTPException(status_code=404, detail="Category not found")
+    cat.is_active = not cat.is_active
+    db.commit()
+    return {"id": cat_id, "is_active": cat.is_active, "name": cat.name}
+
+# ── Featured Products ──
+@router.patch("/products/{product_id}/feature")
+def toggle_featured_product(product_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product: raise HTTPException(status_code=404, detail="Product not found")
+    product.is_featured = not product.is_featured
+    db.commit()
+    return {"id": product_id, "is_featured": product.is_featured}

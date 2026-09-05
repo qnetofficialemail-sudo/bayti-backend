@@ -57,6 +57,9 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
     commission_rate = seller.commission_rate if seller.commission_rate is not None else 12.0
     commission_amount = round(order_total * commission_rate / 100, 2)
 
+    from datetime import datetime, timedelta
+    import pytz
+    cancel_dl = datetime.now(pytz.UTC) + timedelta(minutes=10)
     order = Order(
         buyer_id=current_user.id,
         seller_id=seller.id,
@@ -67,9 +70,12 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
         delivery_fee=DELIVERY_FEE,
         commission_amount=commission_amount,
         status="pending",
+        cancel_deadline=cancel_dl,
     )
     db.add(order)
     db.flush()
+    for item, product, quantity in items_to_order:
+        product.sold_count = (product.sold_count or 0) + quantity
 
     items_for_notification = []
     for item, product, quantity in order_items:
@@ -148,3 +154,20 @@ def update_order_status(order_id: int, status: str, db: Session = Depends(get_db
     order.status = status
     db.commit()
     return {"order_id": order_id, "status": order.status}
+
+
+@router.delete("/{order_id}/cancel")
+def cancel_order(order_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    from datetime import datetime
+    import pytz
+    order = db.query(Order).filter(Order.id == order_id, Order.buyer_id == current_user.id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.status != "pending":
+        raise HTTPException(status_code=400, detail="Can only cancel pending orders")
+    now = datetime.now(pytz.UTC)
+    if order.cancel_deadline and now > order.cancel_deadline:
+        raise HTTPException(status_code=400, detail="Cancellation window has passed (10 minutes)")
+    order.status = "cancelled"
+    db.commit()
+    return {"message": "Order cancelled successfully"}
