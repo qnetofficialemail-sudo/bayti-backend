@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from core.database import engine, Base, SessionLocal
 from models.user import User, SellerProfile, Category, Product, Order, OrderItem, SellerApplication, ProductVariant
 from routers import auth, products, orders, sellers, ai, translation, admin, reviews
-from routers import applications, ai as ai_router as applications_router
+from routers import applications
 from core.auth import hash_password
 import os
 
