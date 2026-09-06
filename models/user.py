@@ -170,7 +170,6 @@ class SellerApplication(Base):
     status = Column(String, default="pending")  # pending, approved, rejected
     invite_token = Column(String, nullable=True, unique=True)
     notes = Column(Text, nullable=True)
-    buyer_phone = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
