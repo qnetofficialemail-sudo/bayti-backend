@@ -2,7 +2,7 @@ import os
 import requests
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-FROM_EMAIL = "onboarding@resend.dev"
+FROM_EMAIL = "noreply@bayti.ink"
 FROM_NAME = "Bayti بيتي"
 
 def send_email(to: str, subject: str, html: str) -> bool:
