@@ -31,9 +31,8 @@ app.include_router(sellers.router)
 app.include_router(ai.router)
 app.include_router(translation.router)
 app.include_router(reviews.router)
-app.include_router(reviews.router)
 app.include_router(admin.router)
-app.include_router(applications_router.router)
+app.include_router(applications.router)
 
 def seed_data():
     db = SessionLocal()
