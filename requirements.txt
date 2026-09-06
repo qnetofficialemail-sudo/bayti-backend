@@ -17,3 +17,4 @@ alembic==1.13.1
 pytz==2024.1
 
 cloudinary==1.36.0
+requests

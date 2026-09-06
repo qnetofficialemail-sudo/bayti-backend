@@ -6,6 +6,7 @@ from core.auth import get_current_admin
 from models.user import SellerApplication, User
 from services.cloudinary_upload import upload_application_doc
 import secrets
+from services.email_service import send_application_received, send_application_approved, send_application_rejected
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 
@@ -55,6 +56,11 @@ async def submit_application(
     db.add(application)
     db.commit()
     db.refresh(application)
+    # Send confirmation email
+    try:
+        send_application_received(application.email, application.full_name)
+    except Exception as e:
+        print(f"Email error: {e}")
     return {"message": "Application submitted successfully", "id": application.id}
 
 
@@ -102,6 +108,13 @@ def approve_application(
     app.status = "approved"
     app.invite_token = token
     db.commit()
+    # Send approval email with registration link
+    base_url = "https://bayti-frontend-three.vercel.app"
+    registration_link = f"{base_url}/seller-register?token={token}"
+    try:
+        send_application_approved(app.email, app.full_name, registration_link)
+    except Exception as e:
+        print(f"Email error: {e}")
     return {
         "message": "Application approved",
         "invite_token": token,
@@ -123,6 +136,11 @@ def reject_application(
     if notes:
         app.notes = notes
     db.commit()
+    # Send rejection email
+    try:
+        send_application_rejected(app.email, app.full_name)
+    except Exception as e:
+        print(f"Email error: {e}")
     return {"message": "Application rejected"}
 
 
