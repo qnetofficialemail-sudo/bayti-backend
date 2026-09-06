@@ -40,12 +40,16 @@ def upload_seller_logo(file_bytes: bytes, filename: str) -> str:
     return result["secure_url"]
 
 def upload_application_doc(file_bytes: bytes, filename: str) -> str:
-    """Upload seller application document to Cloudinary (private folder)."""
+    """Upload seller application document to Cloudinary (public)."""
+    import uuid
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "pdf"
+    unique_id = str(uuid.uuid4())[:8]
+    resource_type = "raw" if ext == "pdf" else "image"
     result = cloudinary.uploader.upload(
         file_bytes,
         folder="bayti/applications",
-        public_id=filename.rsplit(".", 1)[0],
+        public_id=f"doc_{unique_id}",
         overwrite=False,
-        resource_type="auto",
+        resource_type=resource_type,
     )
     return result["secure_url"]
