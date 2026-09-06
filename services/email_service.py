@@ -1,7 +1,7 @@
 import os
 import requests
 
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "re_UdfGhYMG_7XgRvaPEjNq6di9maDKthoPY")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 FROM_EMAIL = "onboarding@resend.dev"
 FROM_NAME = "Bayti بيتي"
 
