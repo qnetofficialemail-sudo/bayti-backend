@@ -69,6 +69,7 @@ def get_seller_public(seller_id: int, db: Session = Depends(get_db)):
         "logo_url": seller.logo_url,
         "badge": seller.badge,
         "rating": seller.rating,
+        "delivery_fees": seller.delivery_fees,
         "avg_response_minutes": seller.avg_response_minutes,
         "total_orders": seller.total_orders,
         "categories_offered": seller.categories_offered,
@@ -93,6 +94,7 @@ async def edit_seller_profile(
     whatsapp_number: Optional[str] = Form(None),
     instagram_handle: Optional[str] = Form(None),
     min_order_amount: Optional[float] = Form(None),
+    delivery_fees: Optional[str] = Form(None),  # JSON string
     sample_image_1: Optional[UploadFile] = File(None),
     sample_image_2: Optional[UploadFile] = File(None),
     sample_image_3: Optional[UploadFile] = File(None),
@@ -171,6 +173,7 @@ async def create_seller_profile_form(
     whatsapp_number: Optional[str] = Form(None),
     instagram_handle: Optional[str] = Form(None),
     min_order_amount: Optional[float] = Form(None),
+    delivery_fees: Optional[str] = Form(None),  # JSON string
     delivery_type: Optional[str] = Form("bayti"),
     categories_offered: Optional[str] = Form(None),
     sample_image_1: Optional[UploadFile] = File(None),

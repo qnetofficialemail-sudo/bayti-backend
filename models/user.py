@@ -59,6 +59,7 @@ class SellerProfile(Base):
     instagram_handle = Column(String, nullable=True)
     min_order_amount = Column(Float, nullable=True)
     delivery_type = Column(String, nullable=True)     # "self" or "bayti"
+    delivery_fees = Column(Text, nullable=True)       # JSON: {"Dubai":15,"Sharjah":20,...} null=not available
     categories_offered = Column(String, nullable=True) # comma-separated category ids
     sample_image_1 = Column(String, nullable=True)
     sample_image_2 = Column(String, nullable=True)

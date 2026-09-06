@@ -53,7 +53,8 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
         ), product, item_data.quantity))
 
     # Calculate commission using seller's custom rate
-    order_total = total + DELIVERY_FEE
+    actual_delivery_fee = data.delivery_fee if data.delivery_fee is not None else DELIVERY_FEE
+    order_total = total + actual_delivery_fee
     commission_rate = seller.commission_rate if seller.commission_rate is not None else 12.0
     commission_amount = round(order_total * commission_rate / 100, 2)
 
@@ -67,7 +68,7 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
         delivery_area=data.delivery_area,
         notes=data.notes,
         total_amount=total,
-        delivery_fee=DELIVERY_FEE,
+        delivery_fee=actual_delivery_fee,
         commission_amount=commission_amount,
         status="pending",
         cancel_deadline=cancel_dl,

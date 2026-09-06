@@ -44,6 +44,7 @@ class SellerProfileOut(BaseModel):
     logo_url: Optional[str]
     is_approved: bool
     rating: float
+    delivery_fees: Optional[str] = None
     total_orders: int
     available_days: Optional[str] = None
     available_from: Optional[str] = None
@@ -123,6 +124,7 @@ class OrderCreate(BaseModel):
     delivery_area: str
     notes: Optional[str] = None
     items: List[OrderItemCreate]
+    delivery_fee: Optional[float] = None
 
 class OrderItemOut(BaseModel):
     id: int
