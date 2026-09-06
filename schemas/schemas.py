@@ -125,6 +125,7 @@ class OrderCreate(BaseModel):
     notes: Optional[str] = None
     items: List[OrderItemCreate]
     delivery_fee: Optional[float] = None
+    buyer_phone: Optional[str] = None
 
 class OrderItemOut(BaseModel):
     id: int

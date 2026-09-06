@@ -120,6 +120,7 @@ class Order(Base):
     delivery_fee = Column(Float, default=10.0)
     commission_amount = Column(Float, default=0.0)
     notes = Column(Text, nullable=True)
+    buyer_phone = Column(String, nullable=True)
     cancel_deadline = Column(DateTime(timezone=True), nullable=True)
     confirmed_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -169,6 +170,7 @@ class SellerApplication(Base):
     status = Column(String, default="pending")  # pending, approved, rejected
     invite_token = Column(String, nullable=True, unique=True)
     notes = Column(Text, nullable=True)
+    buyer_phone = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 

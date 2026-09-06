@@ -67,6 +67,7 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
         delivery_address=data.delivery_address,
         delivery_area=data.delivery_area,
         notes=data.notes,
+        buyer_phone=data.buyer_phone,
         total_amount=total,
         delivery_fee=actual_delivery_fee,
         commission_amount=commission_amount,
