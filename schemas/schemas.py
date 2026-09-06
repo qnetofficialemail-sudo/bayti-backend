@@ -144,6 +144,7 @@ class OrderOut(BaseModel):
     total_amount: float
     delivery_fee: float
     notes: Optional[str]
+    buyer_phone: Optional[str] = None
     created_at: datetime
     items: List[OrderItemOut]
     buyer: Optional[UserOut]
