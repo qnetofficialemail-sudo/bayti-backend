@@ -360,3 +360,21 @@ def set_product_category(
     product.category_id = category_id
     db.commit()
     return {"id": product_id, "category_id": category_id}
+
+@router.patch("/{product_id}/translate")
+def translate_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    if not product.name_ar and product.name:
+        product.name_ar = auto_translate(product.name, "ar")
+    if not product.description_ar and product.description:
+        product.description_ar = auto_translate(product.description, "ar")
+    db.commit()
+    return {"id": product_id, "name_ar": product.name_ar, "description_ar": product.description_ar}
