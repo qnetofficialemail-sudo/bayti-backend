@@ -103,12 +103,16 @@ def ai_pricing_advisor(data: PricingRequest):
 
     query_keywords = get_keywords(data.product_name)
     
-    # Find products where at least 1 keyword matches
-    prices = []
-    for p in category_products:
-        product_keywords = get_keywords(p.name)
-        if query_keywords & product_keywords:  # intersection — any word in common
-            prices.append(p.price)
+    # If category_id matched, use ALL category prices — no keyword filter
+    if data.category_id and category_products:
+        prices = [p.price for p in category_products]
+    else:
+        # Fallback: keyword match across all products
+        prices = []
+        for p in category_products:
+            product_keywords = get_keywords(p.name)
+            if query_keywords & product_keywords:
+                prices.append(p.price)
 
     # Calculate range from real data
     if len(prices) == 0:
