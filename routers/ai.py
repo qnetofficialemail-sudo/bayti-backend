@@ -86,20 +86,16 @@ def ai_pricing_advisor(data: PricingRequest):
         db.close()
 
     # Calculate range from real data
-    if len(prices) >= 3:
+    if len(prices) == 0:
+        # No similar products at all — truly unique
+        price_min = None
+        price_max = None
+        verdict = "unique"
+    elif len(prices) >= 3:
         avg = statistics.mean(prices)
         stdev = statistics.stdev(prices)
         price_min = round(max(avg - stdev, min(prices)), 0)
         price_max = round(min(avg + stdev, max(prices)), 0)
-    elif len(prices) > 0:
-        price_min = round(min(prices) * 0.8, 0)
-        price_max = round(max(prices) * 1.2, 0)
-    else:
-        price_min = round(data.price * 0.7, 0)
-        price_max = round(data.price * 1.3, 0)
-
-    # Determine verdict from real data
-    if len(prices) >= 2:
         if data.price < price_min * 0.85:
             verdict = "low"
         elif data.price > price_max * 1.15:
@@ -107,7 +103,15 @@ def ai_pricing_advisor(data: PricingRequest):
         else:
             verdict = "good"
     else:
-        verdict = "good"
+        # 1-2 similar products — use their range
+        price_min = round(min(prices) * 0.8, 0)
+        price_max = round(max(prices) * 1.2, 0)
+        if data.price < price_min * 0.85:
+            verdict = "low"
+        elif data.price > price_max * 1.15:
+            verdict = "high"
+        else:
+            verdict = "good"
 
     # Ask AI only for a short suggestion text
     try:
@@ -131,4 +135,6 @@ def ai_pricing_advisor(data: PricingRequest):
     except:
         suggestion = f"Market range for this category: AED {price_min}–{price_max}"
 
+    if verdict == "unique":
+        return {"verdict": "unique", "suggestion": suggestion, "min": None, "max": None}
     return {"verdict": verdict, "suggestion": suggestion, "min": int(price_min), "max": int(price_max)}
