@@ -75,39 +75,28 @@ def ai_pricing_advisor(data: PricingRequest):
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
-    # Get products from same category — use category_id if available, fallback to all products
+    # Search ALL products by keyword — category is irrelevant for pricing
     db = SessionLocal()
     try:
-        if data.category_id:
-            category_products = db.query(Product).filter(
-                Product.category_id == data.category_id,
-                Product.price > 0
-            ).limit(100).all()
-        else:
-            category_products = []
+        all_products = db.query(Product).filter(Product.price > 0).limit(500).all()
     finally:
         db.close()
 
     # Keyword-based similarity — extract meaningful words (3+ chars)
     import re
     def get_keywords(text):
-        # Remove common Arabic/English filler words
         stop_words = {"من", "في", "على", "مع", "هذا", "هذه", "و", "the", "and", "with", "for", "of", "a", "an"}
         words = re.findall(r"[\w؀-ۿ]{3,}", text.lower())
         return {w for w in words if w not in stop_words}
 
     query_keywords = get_keywords(data.product_name)
-    
-    # If category_id matched, use ALL category prices — no keyword filter
-    if data.category_id and category_products:
-        prices = [p.price for p in category_products]
-    else:
-        # Fallback: keyword match across all products
-        prices = []
-        for p in category_products:
-            product_keywords = get_keywords(p.name)
-            if query_keywords & product_keywords:
-                prices.append(p.price)
+
+    # Find products with at least 1 keyword in common
+    prices = []
+    for p in all_products:
+        product_keywords = get_keywords(p.name) | get_keywords(p.name_ar or "")
+        if query_keywords & product_keywords:
+            prices.append(p.price)
 
     # Calculate range from real data
     if len(prices) == 0:
