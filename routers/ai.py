@@ -61,6 +61,7 @@ Return 3 product recommendations as JSON array."""
 class PricingRequest(BaseModel):
     product_name: str
     category: str
+    category_id: int | None = None
     price: float
 
 @router.post("/pricing-advisor")
@@ -74,13 +75,19 @@ def ai_pricing_advisor(data: PricingRequest):
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
-    # Get products from same category
+    # Get products from same category — use category_id if available
     db = SessionLocal()
     try:
-        category_products = db.query(Product).join(Category, isouter=True).filter(
-            Category.name.ilike(f"%{data.category}%"),
-            Product.price > 0
-        ).limit(100).all()
+        if data.category_id:
+            category_products = db.query(Product).filter(
+                Product.category_id == data.category_id,
+                Product.price > 0
+            ).limit(100).all()
+        else:
+            category_products = db.query(Product).join(Category, isouter=True).filter(
+                Category.name.ilike(f"%{data.category}%"),
+                Product.price > 0
+            ).limit(100).all()
     finally:
         db.close()
 
