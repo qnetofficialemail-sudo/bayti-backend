@@ -523,3 +523,27 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user=Depend
     db.delete(user)
     db.commit()
     return {"message": "User deleted"}
+
+@router.patch("/sellers/{seller_id}/link-user/{user_id}")
+def link_seller_to_user(seller_id: int, user_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    from models.user import SellerProfile
+    seller = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found")
+    seller.user_id = user_id
+    db.commit()
+    return {"seller_id": seller_id, "user_id": user_id, "status": "linked"}
+
+@router.patch("/sellers/{seller_id}/link-user/{user_id}")
+def link_seller_to_user(seller_id: int, user_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    from models.user import SellerProfile
+    seller = db.query(SellerProfile).filter(SellerProfile.id == seller_id).first()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller not found")
+    seller.user_id = user_id
+    db.commit()
+    return {"seller_id": seller_id, "user_id": user_id, "status": "linked"}
