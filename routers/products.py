@@ -109,9 +109,23 @@ async def create_product(
         else:
             extra_urls.append(None)
 
-    # Auto-translate missing language
-    name_ar = auto_translate(name, "ar") if name else ""
-    description_ar = auto_translate(description, "ar") if description else ""
+    # Detect language and auto-translate
+    import unicodedata
+    def is_arabic(text):
+        if not text: return False
+        arabic_chars = sum(1 for c in text if unicodedata.name(c, "").startswith("ARABIC"))
+        return arabic_chars > len(text) * 0.3
+
+    if is_arabic(name):
+        # Seller typed in Arabic — name field contains Arabic, translate to English
+        name_ar = name
+        name = auto_translate(name, "en") or name
+        description_ar = description or ""
+        description = auto_translate(description, "en") if description else description
+    else:
+        # Seller typed in English — translate to Arabic
+        name_ar = auto_translate(name, "ar") if name else ""
+        description_ar = auto_translate(description, "ar") if description else ""
 
     product = Product(
         seller_id=seller.id,
