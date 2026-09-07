@@ -11,7 +11,7 @@ import uuid
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
-@router.get("/", response_model=List[ProductOut])
+@router.get("", response_model=List[ProductOut])
 def list_products(
     category_id: Optional[int] = None,
     area: Optional[str] = None,
