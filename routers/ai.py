@@ -87,8 +87,17 @@ def ai_pricing_advisor(data: PricingRequest):
     import re
     def get_keywords(text):
         stop_words = {"من", "في", "على", "مع", "هذا", "هذه", "و", "the", "and", "with", "for", "of", "a", "an"}
-        words = re.findall(r"[\w؀-ۿ]{3,}", text.lower())
-        return {w for w in words if w not in stop_words}
+        import re as _re
+        words = _re.findall(r"[\w؀-ۿ]{3,}", text.lower())
+        stemmed = set()
+        for w in words:
+            if w not in stop_words:
+                stemmed.add(w)
+                if w.endswith("s") and len(w) > 4:
+                    stemmed.add(w[:-1])
+                if w.endswith("es") and len(w) > 5:
+                    stemmed.add(w[:-2])
+        return stemmed
 
     query_keywords = get_keywords(data.product_name)
 
