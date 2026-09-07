@@ -194,19 +194,28 @@ async def update_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
+    # Detect language and auto-translate on update
+    import unicodedata
+    def is_arabic_text(text):
+        if not text: return False
+        arabic_chars = sum(1 for c in text if unicodedata.name(c, "").startswith("ARABIC"))
+        return arabic_chars > len(text) * 0.3
+
     if name:
-        product.name = name
-        # Only auto-translate if no manual Arabic provided
-        if not name_ar:
-            try:
-                result = translate_product_to_arabic(name, description or product.description or name)
-                if result["success"]:
-                    product.name_ar = result["name_ar"]
-                    product.description_ar = result["description_ar"]
-            except Exception as e:
-                print(f"Re-translation failed: {e}")
+        if is_arabic_text(name) and not name_ar:
+            product.name_ar = name
+            product.name = auto_translate(name, "en") or name
+            if description and not description_ar:
+                product.description_ar = description
+                product.description = auto_translate(description, "en") or description
+        else:
+            product.name = name
+            if not name_ar:
+                product.name_ar = auto_translate(name, "ar") or product.name_ar
+            if description and not description_ar:
+                product.description_ar = auto_translate(description, "ar") or product.description_ar
     if name_ar is not None: product.name_ar = name_ar
-    if description is not None: product.description = description
+    if description is not None and not (name and is_arabic_text(name)): product.description = description
     if description_ar is not None: product.description_ar = description_ar
     if price is not None: product.price = price
     if is_available is not None: product.is_available = is_available
