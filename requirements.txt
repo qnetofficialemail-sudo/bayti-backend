@@ -18,3 +18,4 @@ pytz==2024.1
 
 cloudinary==1.36.0
 requests
+pywebpush
