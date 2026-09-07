@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/orders", tags=["orders"])
 
 DELIVERY_FEE = 10.0
 
-@router.post(""), response_model=OrderOut)
+@router.post("", response_model=OrderOut)
 def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     if current_user.role == "seller":
         raise HTTPException(status_code=403, detail="Sellers cannot place orders")

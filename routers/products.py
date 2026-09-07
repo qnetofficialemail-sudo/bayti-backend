@@ -50,7 +50,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
-@router.post(""), response_model=ProductOut)
+@router.post("", response_model=ProductOut)
 async def create_product(
     name: str = Form(...),
     description: Optional[str] = Form(None),

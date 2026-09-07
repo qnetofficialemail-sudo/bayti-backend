@@ -40,7 +40,7 @@ def is_seller_open(seller: SellerProfile) -> dict:
 
     return {"is_open": True, "reason": "open", "message": ""}
 
-@router.get(""), response_model=List[SellerProfileOut])
+@router.get("", response_model=List[SellerProfileOut])
 def list_sellers(db: Session = Depends(get_db)):
     return db.query(SellerProfile).filter(SellerProfile.is_approved == True).all()
 
@@ -144,7 +144,7 @@ def update_schedule(
     db.refresh(seller)
     return seller
 
-@router.post(""), response_model=SellerProfileOut)
+@router.post("", response_model=SellerProfileOut)
 def create_seller_profile(
     data: SellerProfileCreate,
     db: Session = Depends(get_db),
