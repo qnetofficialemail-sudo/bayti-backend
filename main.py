@@ -10,6 +10,15 @@ import os
 
 Base.metadata.create_all(bind=engine)
 
+# Add missing columns if they don't exist (safe migration)
+from sqlalchemy import text
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS specs TEXT"))
+        conn.commit()
+except Exception as e:
+    pass
+
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 app = FastAPI(title="Bayti", version="1.0.0", description="Marketplace for home-based businesses in UAE", root_path_in_servers=False)
 
