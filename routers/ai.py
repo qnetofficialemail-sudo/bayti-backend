@@ -210,7 +210,7 @@ UAE seasonal calendar:
 
 Categories on Bayti: {json.dumps(cat_names)}
 
-For each category, provide a demand forecast for the next 6 months.
+For each category, provide a demand forecast for the next 4 months.
 Return ONLY a valid JSON array. Each item must have:
 - category_id (number)
 - category_name (string, in English)
@@ -232,7 +232,7 @@ Return only the JSON array, nothing else."""
             },
             json={
                 "model": "claude-haiku-4-5-20251001",
-                "max_tokens": 2000,
+                "max_tokens": 4000,
                 "messages": [{"role": "user", "content": prompt}],
             },
             timeout=30,
