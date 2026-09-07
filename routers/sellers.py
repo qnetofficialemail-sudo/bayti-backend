@@ -40,6 +40,13 @@ def is_seller_open(seller: SellerProfile) -> dict:
 
     return {"is_open": True, "reason": "open", "message": ""}
 
+@router.get("/me")
+def get_my_seller_profile(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Seller profile not found")
+    return seller
+
 @router.get("", response_model=List[SellerProfileOut])
 def list_sellers(db: Session = Depends(get_db)):
     return db.query(SellerProfile).filter(SellerProfile.is_approved == True).all()
