@@ -124,14 +124,18 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
 
     return order
 
-@router.get("/my", response_model=List[OrderOut])
+@router.get("/my")
 def my_orders(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    if current_user.role in ("seller", "admin"):
-        seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
-        if seller:
-            return db.query(Order).filter(Order.seller_id == seller.id).order_by(Order.created_at.desc()).all()
-        return []
-    return db.query(Order).filter(Order.buyer_id == current_user.id).order_by(Order.created_at.desc()).all()
+    try:
+        if current_user.role in ("seller", "admin"):
+            seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
+            if seller:
+                orders = db.query(Order).filter(Order.seller_id == seller.id).order_by(Order.created_at.desc()).all()
+                return orders
+            return []
+        return db.query(Order).filter(Order.buyer_id == current_user.id).order_by(Order.created_at.desc()).all()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)).order_by(Order.created_at.desc()).all()
 
 @router.get("/{order_id}", response_model=OrderOut)
 def get_order(order_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
