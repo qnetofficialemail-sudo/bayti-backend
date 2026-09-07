@@ -8,7 +8,7 @@ from typing import Optional
 
 router = APIRouter(prefix="/api/reviews", tags=["reviews"])
 
-@router.post(""))
+@router.post("")
 def create_review(
     order_id: int,
     rating: int,
