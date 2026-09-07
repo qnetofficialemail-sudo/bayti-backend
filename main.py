@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from core.database import engine, Base, SessionLocal
 from models.user import User, SellerProfile, Category, Product, Order, OrderItem, SellerApplication, ProductVariant
-from routers import auth, products, orders, sellers, ai, translation, admin, reviews
+from routers import auth, products, orders, sellers, ai, translation, admin, reviews, push
 from routers import applications
 from core.auth import hash_password
 import os
@@ -15,6 +15,7 @@ from sqlalchemy import text
 try:
     with engine.connect() as conn:
         conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS specs TEXT"))
+        conn.execute(text("CREATE TABLE IF NOT EXISTS push_subscriptions (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), subscription_json TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW())"))
         conn.commit()
 except Exception as e:
     pass
@@ -42,6 +43,7 @@ app.include_router(sellers.router)
 app.include_router(ai.router)
 app.include_router(translation.router)
 app.include_router(reviews.router)
+app.include_router(push.router)
 app.include_router(admin.router)
 app.include_router(applications.router)
 

@@ -183,3 +183,11 @@ class ProductVariant(Base):
     options = Column(Text, nullable=False)       # JSON: [{"label":"S","price_adj":0},{"label":"M","price_adj":5}]
     is_required = Column(Boolean, default=True)
     product = relationship("Product", back_populates="variants")
+
+
+class PushSubscription(Base):
+    __tablename__ = "push_subscriptions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    subscription_json = Column(Text, nullable=False)  # JSON string from browser
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

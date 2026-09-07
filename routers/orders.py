@@ -94,6 +94,19 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
     seller.total_orders += 1
     db.commit()
     db.refresh(order)
+    # Send push notification to seller
+    try:
+        from routers.push import send_push_notification
+        if seller.user_id:
+            send_push_notification(
+                db=db,
+                user_id=seller.user_id,
+                title="طلب جديد! New Order",
+                body=f"طلب جديد على {product.name} - {order.total_amount} AED",
+                url="/seller/dashboard"
+            )
+    except Exception as e:
+        print(f"Push notification failed: {e}")
 
     try:
         if seller.user.phone:
