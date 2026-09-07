@@ -11,6 +11,24 @@ import uuid
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
+def auto_translate(text: str, to_lang: str) -> str:
+    import requests as _requests, os as _os
+    api_key = _os.getenv("ANTHROPIC_API_KEY")
+    if not api_key or not text:
+        return ""
+    lang_name = "Arabic" if to_lang == "ar" else "English"
+    try:
+        resp = _requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+            json={"model": "claude-haiku-4-5-20251001", "max_tokens": 300,
+                  "messages": [{"role": "user", "content": f"Translate to {lang_name}. Return ONLY the translation:\n\n{text}"}]},
+            timeout=15,
+        )
+        return resp.json().get("content", [{}])[0].get("text", "").strip()
+    except:
+        return ""
+
 @router.get("", response_model=List[ProductOut])
 def list_products(
     category_id: Optional[int] = None,
@@ -91,10 +109,16 @@ async def create_product(
         else:
             extra_urls.append(None)
 
+    # Auto-translate missing language
+    name_ar = auto_translate(name, "ar") if name else ""
+    description_ar = auto_translate(description, "ar") if description else ""
+
     product = Product(
         seller_id=seller.id,
         name=name,
+        name_ar=name_ar,
         description=description,
+        description_ar=description_ar,
         price=price,
         category_id=category_id,
         preparation_time=preparation_time,
