@@ -72,6 +72,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 async def create_product(
     name: str = Form(...),
     description: Optional[str] = Form(None),
+    specs: Optional[str] = Form(None),
     price: float = Form(...),
     category_id: Optional[int] = Form(None),
     preparation_time: int = Form(60),
@@ -133,6 +134,7 @@ async def create_product(
         name_ar=name_ar,
         description=description,
         description_ar=description_ar,
+        specs=specs,
         price=price,
         category_id=category_id,
         preparation_time=preparation_time,

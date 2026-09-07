@@ -94,6 +94,7 @@ class ProductOut(BaseModel):
     name_ar: Optional[str] = None
     description: Optional[str]
     description_ar: Optional[str] = None
+    specs: Optional[str] = None
     price: float
     image_url: Optional[str] = None
     image_2: Optional[str] = None

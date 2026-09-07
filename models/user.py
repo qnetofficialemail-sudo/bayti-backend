@@ -88,6 +88,7 @@ class Product(Base):
     name_ar = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     description_ar = Column(Text, nullable=True)
+    specs = Column(Text, nullable=True)  # JSON string of category-specific specs
     price = Column(Float, nullable=False)
     image_url = Column(String, nullable=True)
     image_2 = Column(String, nullable=True)
