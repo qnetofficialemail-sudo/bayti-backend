@@ -319,3 +319,20 @@ def seller_delete_product(
     db.delete(product)
     db.commit()
     return {"message": "Product deleted"}
+
+@router.patch("/{product_id}/category")
+def set_product_category(
+    product_id: int,
+    category_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """Admin: set category_id on a product."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    product.category_id = category_id
+    db.commit()
+    return {"id": product_id, "category_id": category_id}

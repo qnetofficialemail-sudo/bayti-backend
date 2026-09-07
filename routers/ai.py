@@ -75,7 +75,7 @@ def ai_pricing_advisor(data: PricingRequest):
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
-    # Get products from same category — use category_id if available
+    # Get products from same category — use category_id if available, fallback to all products
     db = SessionLocal()
     try:
         if data.category_id:
@@ -84,10 +84,12 @@ def ai_pricing_advisor(data: PricingRequest):
                 Product.price > 0
             ).limit(100).all()
         else:
-            category_products = db.query(Product).join(Category, isouter=True).filter(
-                Category.name.ilike(f"%{data.category}%"),
+            category_products = []
+        # Fallback: if no results, try name match across all products
+        if not category_products:
+            category_products = db.query(Product).filter(
                 Product.price > 0
-            ).limit(100).all()
+            ).limit(200).all()
     finally:
         db.close()
 
