@@ -63,6 +63,7 @@ class PricingRequest(BaseModel):
     category: str
     category_id: int | None = None
     price: float
+    lang: str = "ar"
 
 @router.post("/pricing-advisor")
 def ai_pricing_advisor(data: PricingRequest):
@@ -138,7 +139,7 @@ def ai_pricing_advisor(data: PricingRequest):
             json={
                 "model": "claude-haiku-4-5-20251001",
                 "max_tokens": 60,
-                "system": "You are a UAE marketplace pricing advisor. Write ONE short sentence of practical advice (max 12 words). Be warm and direct. No JSON, just the sentence.",
+                "system": f"You are a UAE marketplace pricing advisor. Write ONE short sentence of practical advice (max 12 words). Always write in {'Arabic' if data.lang == 'ar' else 'English'}. Be warm and direct. No JSON, just the sentence.",
                 "messages": [{"role": "user", "content": f'Product: "{data.product_name}", Price: AED {data.price}, Market range: AED {price_min}-{price_max}, Verdict: {verdict}. Give one short tip.'}],
             },
             timeout=15,
