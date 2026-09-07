@@ -99,14 +99,24 @@ def ai_pricing_advisor(data: PricingRequest):
                     stemmed.add(w[:-2])
         return stemmed
 
+    # Search using keywords from BOTH name and name_ar of query — language-agnostic
     query_keywords = get_keywords(data.product_name)
 
-    # Find products with at least 1 keyword in common
-    prices = []
+    # Match against both AR and EN product names — collect matched product ids
+    matched_ids = set()
     for p in all_products:
         product_keywords = get_keywords(p.name) | get_keywords(p.name_ar or "")
         if query_keywords & product_keywords:
-            prices.append(p.price)
+            matched_ids.add(p.id)
+
+    # Also add all products from same category_id to the matched pool
+    # This ensures "candles" and "شموع" get the same range when same category selected
+    if data.category_id:
+        for p in all_products:
+            if p.category_id == data.category_id:
+                matched_ids.add(p.id)
+
+    prices = [p.price for p in all_products if p.id in matched_ids]
 
     # Calculate range from real data
     if len(prices) == 0:
