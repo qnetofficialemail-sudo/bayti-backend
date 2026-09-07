@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends
+from core.database import get_db, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 import os
@@ -171,3 +173,74 @@ def ai_pricing_advisor(data: PricingRequest):
     if verdict == "unique":
         return {"verdict": "unique", "suggestion": suggestion, "min": None, "max": None}
     return {"verdict": verdict, "suggestion": suggestion, "min": int(price_min), "max": int(price_max)}
+
+
+@router.get("/demand-forecast")
+def ai_demand_forecast(db: Session = Depends(get_db)):
+    """AI Demand Forecasting — UAE seasonal demand spikes per category."""
+    from core.database import SessionLocal
+    from models.user import Category
+    import json, datetime
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+
+    db2 = SessionLocal()
+    try:
+        categories = db2.query(Category).filter(Category.is_active == True).all()
+        cat_names = [{"id": c.id, "name": c.name, "name_ar": c.name_ar} for c in categories]
+    finally:
+        db2.close()
+
+    current_month = datetime.datetime.now().month
+    current_year = datetime.datetime.now().year
+
+    prompt = f"""You are a UAE marketplace demand analyst. Today is month {current_month} of {current_year}.
+
+UAE seasonal calendar:
+- Ramadan (March/April): high demand for food, gifts, home decor, modest fashion
+- Eid Al-Fitr (April): very high demand for fashion, accessories, gifts, sweets
+- Eid Al-Adha (June/July): high demand for fashion, home goods, gifts
+- Back to school (August/September): accessories, stationery, fashion
+- UAE National Day (December 2): home decor, gifts, UAE-themed products
+- Dubai Shopping Festival (December/January): all categories spike
+- Mother's Day UAE (March 21): gifts, candles, beauty, accessories
+- Valentine's Day (February 14): candles, gifts, accessories
+
+Categories on Bayti: {json.dumps(cat_names)}
+
+For each category, provide a demand forecast for the next 6 months.
+Return ONLY a valid JSON array. Each item must have:
+- category_id (number)
+- category_name (string, in English)
+- monthly_demand (array of 6 objects, each with: month (1-12), year (number), demand_index (0-100), season_label (string, short), season_label_ar (string in Arabic))
+- top_season (string, the single biggest upcoming opportunity in English)
+- top_season_ar (string, same in Arabic)
+- tip (string, one actionable tip in English, max 15 words)
+- tip_ar (string, same tip in Arabic)
+
+Return only the JSON array, nothing else."""
+
+    try:
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 2000,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=30,
+        )
+        result = response.json()
+        text = result.get("content", [{}])[0].get("text", "[]")
+        clean = text.replace("```json", "").replace("```", "").strip()
+        forecasts = json.loads(clean)
+        return {"forecasts": forecasts, "current_month": current_month, "current_year": current_year}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
