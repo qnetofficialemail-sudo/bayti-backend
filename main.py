@@ -10,8 +10,10 @@ import os
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="HomeMarket UAE", version="1.0.0", description="Marketplace for home-based businesses in UAE")
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+app = FastAPI(title="Bayti", version="1.0.0", description="Marketplace for home-based businesses in UAE", root_path_in_servers=False)
 
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
