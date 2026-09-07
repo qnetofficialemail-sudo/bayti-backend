@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from core.database import get_db
+from core.auth import get_current_seller
 from pydantic import BaseModel
 from typing import List, Optional
 import os
