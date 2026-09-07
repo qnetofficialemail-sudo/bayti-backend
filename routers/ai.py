@@ -65,40 +65,51 @@ class PricingRequest(BaseModel):
 
 @router.post("/pricing-advisor")
 def ai_pricing_advisor(data: PricingRequest):
-    """AI Pricing Advisor — analyzes market and suggests optimal price."""
+    """AI Pricing Advisor — data-driven pricing based on real market prices."""
     from core.database import SessionLocal
     from models.user import Product, Category
-    
+    import statistics, json
+
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
-    # Get similar products from DB
+    # Get similar products prices from DB
     db = SessionLocal()
     try:
         similar = db.query(Product).join(Category, isouter=True).filter(
-            Category.name.ilike(f"%{data.category}%")
-        ).limit(20).all()
-        
-        market_data = [{"name": p.name, "price": p.price} for p in similar if p.price > 0]
+            Category.name.ilike(f"%{data.category}%"),
+            Product.price > 0
+        ).limit(50).all()
+        prices = [p.price for p in similar if p.price > 0]
     finally:
         db.close()
 
-    system_prompt = """You are a UAE marketplace pricing expert for Bayti.
-Analyze the product and market data, then give a short pricing recommendation.
-Respond in JSON: {"verdict": "good"|"high"|"low", "suggestion": "one sentence advice", "min": number, "max": number}
-verdict: "good" if price is competitive, "high" if overpriced, "low" if underpriced.
-suggestion: warm, practical advice in 15 words max.
-min/max: the recommended price range based on market data.
-Return ONLY the JSON object."""
+    # Calculate range from real data
+    if len(prices) >= 3:
+        avg = statistics.mean(prices)
+        stdev = statistics.stdev(prices)
+        price_min = round(max(avg - stdev, min(prices)), 0)
+        price_max = round(min(avg + stdev, max(prices)), 0)
+    elif len(prices) > 0:
+        price_min = round(min(prices) * 0.8, 0)
+        price_max = round(max(prices) * 1.2, 0)
+    else:
+        price_min = round(data.price * 0.7, 0)
+        price_max = round(data.price * 1.3, 0)
 
-    user_prompt = f"""Product: "{data.product_name}"
-Category: {data.category}
-Seller's price: AED {data.price}
-Similar products on Bayti: {market_data if market_data else "No similar products yet — this could be a unique opportunity!"}
+    # Determine verdict from real data
+    if len(prices) >= 2:
+        if data.price < price_min * 0.85:
+            verdict = "low"
+        elif data.price > price_max * 1.15:
+            verdict = "high"
+        else:
+            verdict = "good"
+    else:
+        verdict = "good"
 
-Give pricing recommendation as JSON."""
-
+    # Ask AI only for a short suggestion text
     try:
         response = requests.post(
             "https://api.anthropic.com/v1/messages",
@@ -109,17 +120,15 @@ Give pricing recommendation as JSON."""
             },
             json={
                 "model": "claude-haiku-4-5-20251001",
-                "max_tokens": 200,
-                "system": system_prompt,
-                "messages": [{"role": "user", "content": user_prompt}],
+                "max_tokens": 60,
+                "system": "You are a UAE marketplace pricing advisor. Write ONE short sentence of practical advice (max 12 words). Be warm and direct. No JSON, just the sentence.",
+                "messages": [{"role": "user", "content": f'Product: "{data.product_name}", Price: AED {data.price}, Market range: AED {price_min}-{price_max}, Verdict: {verdict}. Give one short tip.'}],
             },
             timeout=15,
         )
         result = response.json()
-        text = result.get("content", [{}])[0].get("text", "{}")
-        import json
-        clean = text.replace("```json", "").replace("```", "").strip()
-        advice = json.loads(clean)
-        return advice
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        suggestion = result.get("content", [{}])[0].get("text", "").strip()
+    except:
+        suggestion = f"Market range for this category: AED {price_min}–{price_max}"
+
+    return {"verdict": verdict, "suggestion": suggestion, "min": int(price_min), "max": int(price_max)}
