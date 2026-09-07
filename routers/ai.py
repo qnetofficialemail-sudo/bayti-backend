@@ -85,11 +85,6 @@ def ai_pricing_advisor(data: PricingRequest):
             ).limit(100).all()
         else:
             category_products = []
-        # Fallback: if no results, try name match across all products
-        if not category_products:
-            category_products = db.query(Product).filter(
-                Product.price > 0
-            ).limit(200).all()
     finally:
         db.close()
 
