@@ -80,36 +80,26 @@ def ai_pricing_advisor(data: PricingRequest):
         category_products = db.query(Product).join(Category, isouter=True).filter(
             Category.name.ilike(f"%{data.category}%"),
             Product.price > 0
-        ).limit(50).all()
-        all_names = [{"name": p.name, "price": p.price} for p in category_products]
+        ).limit(100).all()
     finally:
         db.close()
 
-    # Use AI to find semantically similar products
+    # Keyword-based similarity — extract meaningful words (3+ chars)
+    import re
+    def get_keywords(text):
+        # Remove common Arabic/English filler words
+        stop_words = {"من", "في", "على", "مع", "هذا", "هذه", "و", "the", "and", "with", "for", "of", "a", "an"}
+        words = re.findall(r"[\w؀-ۿ]{3,}", text.lower())
+        return {w for w in words if w not in stop_words}
+
+    query_keywords = get_keywords(data.product_name)
+    
+    # Find products where at least 1 keyword matches
     prices = []
-    if all_names:
-        try:
-            sim_response = requests.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": "claude-haiku-4-5-20251001",
-                    "max_tokens": 150,
-                    "system": "You are a product similarity judge. Given a new product and existing products, return ONLY a JSON array of prices of similar products. Similar = same product type (e.g. scented candle and colored candle are similar; candle and perfume are not). If none similar, return []. Return ONLY the JSON array.",
-                    "messages": [{"role": "user", "content": f"New: '{data.product_name}'. Existing: {all_names}. Return prices array."}],
-                },
-                timeout=10,
-            )
-            sim_text = sim_response.json().get("content", [{}])[0].get("text", "[]")
-            clean_sim = sim_text.replace("```json", "").replace("```", "").strip()
-            similar_prices = json.loads(clean_sim)
-            prices = [float(p) for p in similar_prices if isinstance(p, (int, float)) and p > 0]
-        except:
-            prices = [p["price"] for p in all_names]
+    for p in category_products:
+        product_keywords = get_keywords(p.name)
+        if query_keywords & product_keywords:  # intersection — any word in common
+            prices.append(p.price)
 
     # Calculate range from real data
     if len(prices) == 0:
