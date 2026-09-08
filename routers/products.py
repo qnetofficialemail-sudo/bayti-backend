@@ -22,12 +22,15 @@ def auto_translate(text: str, to_lang: str) -> str:
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
             json={"model": "claude-haiku-4-5-20251001", "max_tokens": 300,
-                  "messages": [{"role": "user", "content": f"Translate to {lang_name}. Return ONLY the translation:\n\n{text}"}]},
+                  "messages": [{"role": "user", "content": f"You are a UAE marketplace translator. Translate this product text to {lang_name}. If it is a UAE traditional food name or Arabic dialect word, transliterate it phonetically. Return ONLY the translation, no explanation:\n\n{text}"}]},
             timeout=15,
         )
-        return resp.json().get("content", [{}])[0].get("text", "").strip()
+        result = resp.json().get("content", [{}])[0].get("text", "").strip()
+        if len(result) > len(text) * 4 or result.count("?") > 1 or "I'm not" in result or "I am not" in result:
+            return text
+        return result
     except:
-        return ""
+        return text
 
 @router.get("", response_model=List[ProductOut])
 def list_products(
