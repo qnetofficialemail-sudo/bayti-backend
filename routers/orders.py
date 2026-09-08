@@ -124,16 +124,31 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
 
     return order
 
-@router.get("/my", response_model=List[OrderOut])
+@router.get("/my")
 def my_orders(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     try:
         if current_user.role in ("seller", "admin"):
             seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
             if seller:
                 orders = db.query(Order).filter(Order.seller_id == seller.id).order_by(Order.created_at.desc()).all()
-                return orders
-            return []
-        return db.query(Order).filter(Order.buyer_id == current_user.id).order_by(Order.created_at.desc()).all()
+            else:
+                return []
+        else:
+            orders = db.query(Order).filter(Order.buyer_id == current_user.id).order_by(Order.created_at.desc()).all()
+        result = []
+        for o in orders:
+            result.append({
+                "id": o.id, "status": o.status, "total_amount": o.total_amount,
+                "delivery_fee": o.delivery_fee, "delivery_address": o.delivery_address,
+                "delivery_area": o.delivery_area, "notes": o.notes, "buyer_phone": o.buyer_phone,
+                "created_at": str(o.created_at), "cancel_deadline": str(o.cancel_deadline) if o.cancel_deadline else None,
+                "buyer": {"full_name": o.buyer.full_name, "phone": o.buyer.phone} if o.buyer else None,
+                "items": [{"id": i.id, "quantity": i.quantity, "unit_price": i.unit_price,
+                           "product": {"id": i.product.id, "name": i.product.name, "name_ar": i.product.name_ar,
+                                       "image_url": i.product.image_url} if i.product else None}
+                          for i in (o.items or [])],
+            })
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)).order_by(Order.created_at.desc()).all()
 
