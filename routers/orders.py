@@ -124,7 +124,7 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db), current_user=
 
     return order
 
-@router.get("/my")
+@router.get("/my", response_model=List[OrderOut])
 def my_orders(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     try:
         if current_user.role in ("seller", "admin"):
