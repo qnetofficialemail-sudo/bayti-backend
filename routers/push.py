@@ -51,24 +51,27 @@ def send_push_notification(db: Session, user_id: int, title: str, body: str, url
         return
     
     subs = db.query(PushSubscription).filter(PushSubscription.user_id == user_id).all()
+    print(f"Push: found {len(subs)} subscriptions for user {user_id}")
     
     for sub in subs:
         try:
             subscription = json.loads(sub.subscription_json)
+            print(f"Push: sending to endpoint {subscription.get('endpoint', 'unknown')[:50]}")
             webpush(
                 subscription_info=subscription,
                 data=json.dumps({"title": title, "body": body, "url": url}),
                 vapid_private_key=private_key,
                 vapid_claims={"sub": f"mailto:{claims_email}"},
             )
+            print(f"Push: sent successfully")
         except WebPushException as e:
-            print(f"Push failed: {e}")
+            print(f"Push WebPushException: {e}")
+            print(f"Push response: {e.response.text if hasattr(e, 'response') and e.response else 'no response'}")
             if "410" in str(e) or "404" in str(e):
-                # Subscription expired — remove it
                 db.delete(sub)
                 db.commit()
         except Exception as e:
-            print(f"Push error: {e}")
+            print(f"Push error: {type(e).__name__}: {e}")
 
 @router.post("/test")
 def test_push(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
