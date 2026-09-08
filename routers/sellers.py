@@ -4,7 +4,7 @@ from typing import List, Optional
 from core.database import get_db
 from core.auth import get_current_user, get_current_seller
 from models.user import SellerProfile
-from schemas.schemas import SellerProfileOut, SellerProfileCreate, SellerScheduleUpdate
+from schemas.schemas import SellerProfileOut, SellerProfileCreate, SellerScheduleUpdate, PublicSellerOut
 from datetime import datetime
 import pytz
 
@@ -47,7 +47,7 @@ def get_my_seller_profile(db: Session = Depends(get_db), current_user=Depends(ge
         raise HTTPException(status_code=404, detail="Seller profile not found")
     return seller
 
-@router.get("", response_model=List[SellerProfileOut])
+@router.get("", response_model=List[PublicSellerOut])
 def list_sellers(db: Session = Depends(get_db)):
     return db.query(SellerProfile).filter(SellerProfile.is_approved == True).all()
 

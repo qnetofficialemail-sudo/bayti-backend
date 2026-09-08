@@ -35,6 +35,30 @@ class SellerProfileCreate(BaseModel):
     area: str
     city: str = "Dubai"
 
+class PublicSellerOut(BaseModel):
+    id: int
+    shop_name: str
+    description: Optional[str] = None
+    area: str
+    city: str
+    logo_url: Optional[str] = None
+    rating: float
+    total_orders: int
+    accepting_orders: bool = True
+    available_from: Optional[str] = None
+    available_until: Optional[str] = None
+    available_days: Optional[str] = None
+    delivery_type: Optional[str] = None
+    min_order_amount: Optional[float] = None
+    categories_offered: Optional[str] = None
+    sample_image_1: Optional[str] = None
+    sample_image_2: Optional[str] = None
+    sample_image_3: Optional[str] = None
+    badge: Optional[str] = None
+    instagram_handle: Optional[str] = None
+    class Config:
+        from_attributes = True
+
 class SellerProfileOut(BaseModel):
     id: int
     shop_name: str
