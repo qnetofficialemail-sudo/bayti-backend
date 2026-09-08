@@ -69,3 +69,14 @@ def send_push_notification(db: Session, user_id: int, title: str, body: str, url
                 db.commit()
         except Exception as e:
             print(f"Push error: {e}")
+
+@router.post("/test")
+def test_push(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    send_push_notification(
+        db=db,
+        user_id=current_user.id,
+        title="Test Notification",
+        body="Push notifications are working!",
+        url="/seller/dashboard"
+    )
+    return {"status": "sent", "user_id": current_user.id}
