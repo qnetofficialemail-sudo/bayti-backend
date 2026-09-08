@@ -122,8 +122,15 @@ def root():
 
 @app.get("/api/categories")
 def get_categories(db=__import__('fastapi', fromlist=['Depends']).Depends(__import__('core.database', fromlist=['get_db']).get_db), show_all: bool = False):
-    from models.user import Category
+    from models.user import Category, Product
+    from sqlalchemy import func
     query = db.query(Category)
     if not show_all:
         query = query.filter(Category.is_active == True)
-    return query.order_by(Category.sort_order).all()
+    categories = query.order_by(Category.sort_order).all()
+    # Add product count to each category
+    counts = dict(db.query(Product.category_id, func.count(Product.id)).filter(Product.is_available == True).group_by(Product.category_id).all())
+    result = []
+    for cat in categories:
+        result.append({"id": cat.id, "name": cat.name, "name_ar": cat.name_ar, "icon": cat.icon, "is_active": cat.is_active, "sort_order": cat.sort_order, "product_count": counts.get(cat.id, 0)})
+    return result
