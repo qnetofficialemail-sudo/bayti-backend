@@ -432,7 +432,7 @@ def generate_instagram_content_v2(data: dict):
 }}"""
 
         # Generate caption for sellers
-        import json as json_lib_s
+        import json as json_lib_s, random as random_s
         response_s = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=1000,
@@ -444,15 +444,39 @@ def generate_instagram_content_v2(data: dict):
         end_s = text_s.rfind("}") + 1
         parsed_s = json_lib_s.loads(text_s[start_s:end_s]) if start_s >= 0 and end_s > start_s else {"caption": text_s}
 
-        # Use real Bayti mockup screenshot (free, no DALL-E)
-        import random as random_s
-        MOCKUP_BASE = "https://bayti-frontend-three.vercel.app/mockups"
-        mockup_url = random_s.choice([f"{MOCKUP_BASE}/mockup_0{i}.png" for i in range(1, 6)])
+        # Smart image selection based on topic
+        # Topics about the platform/registration → mockup (free)
+        # Topics about tips/photography/pricing → DALL-E lifestyle photo
+        PLATFORM_KEYWORDS = ["انضمام", "تسجيل", "بيتي", "موقع", "منصة", "مميزات", "لوحة تحكم", "إطلاق", "أوائل", "خلف الكواليس"]
+        use_mockup = any(kw in topic for kw in PLATFORM_KEYWORDS)
+
+        if use_mockup:
+            MOCKUP_BASE = "https://bayti-frontend-three.vercel.app/mockups"
+            image_url_s = random_s.choice([f"{MOCKUP_BASE}/mockup_0{i}.png" for i in range(1, 6)])
+        else:
+            # Generate relevant lifestyle image with DALL-E
+            image_url_s = None
+            if openai_key:
+                try:
+                    img_prompt = parsed_s.get("image_prompt", f"Woman entrepreneur at home UAE, {topic}, warm lifestyle photography")
+                    safe_prompt = f"{img_prompt}. Authentic UAE lifestyle, warm tones. No text, no logos."
+                    img_response = httpx.post(
+                        "https://api.openai.com/v1/images/generations",
+                        headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
+                        json={"model": "gpt-image-1", "prompt": safe_prompt, "n": 1, "size": "1024x1024"},
+                        timeout=90
+                    )
+                    img_data = img_response.json()["data"][0]
+                    image_url_s = f"data:image/png;base64,{img_data['b64_json']}" if "b64_json" in img_data else img_data.get("url")
+                except Exception:
+                    # Fallback to mockup
+                    MOCKUP_BASE = "https://bayti-frontend-three.vercel.app/mockups"
+                    image_url_s = random_s.choice([f"{MOCKUP_BASE}/mockup_0{i}.png" for i in range(1, 6)])
 
         return {
             "caption": parsed_s.get("caption", text_s),
             "hashtags": HASHTAGS,
-            "image_url": mockup_url,
+            "image_url": image_url_s,
             "type": content_type,
             "event": ""
         }
