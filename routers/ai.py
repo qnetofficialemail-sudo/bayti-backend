@@ -340,7 +340,7 @@ def generate_instagram_content(data: dict):
 أعطني JSON فقط بهذا الشكل:
 {{
   "caption": "نص المنشور — يبدأ بجملة قوية، إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n🔗 سجّلي الآن: bayti-frontend-three.vercel.app/sell",
-  "image_prompt": "Professional flat lay photography that visually represents [{topic}], warm orange and cream tones, UAE artisan aesthetic, golden light, Instagram square format, no people, no faces, no text, no logos"
+  "image_prompt": "Creative Instagram-worthy photograph related to [{topic}]. Choose ONE of these styles randomly: (1) Warm lifestyle flat lay with handmade UAE products, morning golden light, linen texture, terracotta and cream tones (2) Moody overhead shot, dark wood surface, candles lit, dramatic shadows, rich amber and orange (3) Bright airy aesthetic, white marble, fresh flowers, pastel accents, clean minimalist (4) Rustic outdoor scene, natural stone surface, dried botanicals, earthy browns and warm greens (5) Elegant luxury setup, velvet fabric, gold accents, deep jewel tones, sophisticated lighting. Make it photorealistic, highly detailed, unique composition. No people, no text, no logos, no faces."
 }}"""
         }]
     )
