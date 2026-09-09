@@ -383,3 +383,154 @@ def generate_instagram_content(data: dict):
         "image_url": image_url,
         "topic": topic
     }
+
+
+@router.post("/instagram-content-v2")
+def generate_instagram_content_v2(data: dict):
+    """Generate Instagram content with 3 types: sellers, events/trends, value"""
+    import anthropic, base64, httpx, os, datetime
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
+
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+
+    content_type = data.get("type", "sellers")  # sellers | events | value
+    client = anthropic.Anthropic(api_key=api_key)
+
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=4)))
+    current_date = now.strftime("%B %d, %Y")
+    current_month = now.strftime("%B")
+
+    HASHTAGS = "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #bayti"
+
+    # ── Type 1: Seller recruitment ──────────────────────────────────
+    if content_type == "sellers":
+        import random
+        topics = [
+            "دعوة البائعات المنزليات للانضمام إلى بيتي قبل الإطلاق الرسمي",
+            "مميزات البيع عبر بيتي — الذكاء الاصطناعي يكتب عنك",
+            "نصيحة للبائعة المبتدئة: كيف تصوّرين منتجك باحترافية",
+            "كوني من الأوائل — مميزات حصرية لمن تسجّل الآن",
+            "بيتي والبائعات: قصة نبنيها معاً",
+            "رحلة من البيت إلى الزبون — كيف يعمل بيتي",
+            "لماذا بيتي أفضل من الانستقرام للبيع؟",
+            "خلف الكواليس: كيف نبني بيتي",
+        ]
+        topic = random.choice(topics)
+        system = """أنت مدير محتوى إنستقرام لمنصة بيتي — سوق للبائعات المنزليات المقيمات في الإمارات من جميع الجنسيات.
+الموقع في مرحلة تجريبية. اكتب بالعربية الفصحى الخفيفة. لا تخترع أرقاماً.
+الأسلوب: دافئ، مشجع، احترافي.
+مهم: لا تخصّص المحتوى لجنسية معينة — الموقع لجميع النساء المقيمات في الإمارات."""
+
+        user_msg = f"""أنشئ منشور إنستقرام عن: {topic}
+أعطني JSON فقط:
+{{
+  "caption": "نص المنشور — يبدأ بجملة قوية، إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n🔗 سجّلي الآن: bayti-frontend-three.vercel.app/sell",
+  "image_prompt": "Creative Instagram photo for [{topic}]. Choose one style: warm flat lay with handmade products / moody dark wood with candles / bright white marble with flowers / rustic stone with botanicals / elegant velvet with gold. Photorealistic, highly detailed. No people, no text, no logos."
+}}"""
+
+    # ── Type 2: Events & Trends ─────────────────────────────────────
+    elif content_type == "events":
+        system = """أنت مدير محتوى إنستقرام خبير في السوق الإماراتي.
+تكتب محتوى ترفيهياً وتفاعلياً يعكس الفعاليات والترندات الحالية في الإمارات.
+اكتب بالعربية الفصحى الخفيفة. الأسلوب: حيوي، عصري، جذاب.
+ربط المحتوى ببيتي بشكل طبيعي وغير مباشر."""
+
+        user_msg = f"""اليوم: {current_date}
+الشهر: {current_month}
+
+أنت تكتب لحساب @baytimarketplace — سوق للمنتجات المنزلية في الإمارات.
+
+١. ابحث في معرفتك عن أبرز الفعاليات والأحداث في الإمارات هذا الشهر ({current_month}).
+٢. فكّر في الترندات الموسمية (رمضان، العيد، DSF، اليوم الوطني، الجمعة البيضاء، موسم المدارس، إلخ).
+٣. اكتب منشور تفاعلي يربط الفعالية/الترند بالمنتجات المنزلية والحرفية.
+
+أعطني JSON فقط:
+{{
+  "event": "اسم الفعالية أو الترند",
+  "caption": "نص المنشور — يبدأ بجملة جذابة تعكس الفعالية، إيموجي كثيرة، ١٥٠-٢٠٠ كلمة، سؤال تفاعلي في النهاية، ثم:\n\n🛍️ اكتشفي منتجات محلية: bayti-frontend-three.vercel.app",
+  "hashtags": "٥ هاشتاقات مناسبة للفعالية + #بيتي",
+  "image_prompt": "Vibrant Instagram photo celebrating [event] in UAE context. Show relevant products or scene. Photorealistic, festive, warm colors. No people, no text, no logos."
+}}"""
+
+    # ── Type 3: Value content ────────────────────────────────────────
+    else:  # value
+        import random
+        value_topics = [
+            "٥ نصائح لتصوير منتجاتك باحترافية من البيت",
+            "كيف تحددين سعر منتجك بذكاء؟",
+            "أفكار هدايا مميزة من منتجات محلية",
+            "كيف تبنين علامتك التجارية الشخصية؟",
+            "أخطاء شائعة تقع فيها البائعات المبتدئات",
+            "كيف تكتبين وصفاً جذاباً لمنتجك؟",
+            "نصائح لتغليف منتجاتك باحترافية",
+            "كيف تتعاملين مع الزبون الصعب؟",
+            "استراتيجية التسعير للمنتجات الحرفية",
+            "كيف تجدين زبائنك الأوائل؟",
+        ]
+        topic = random.choice(value_topics)
+        system = """أنت خبير تسويق ومحتوى متخصص في ريادة الأعمال المنزلية في الإمارات.
+تكتب محتوى قيّماً وعملياً يساعد النساء على تطوير مشاريعهن.
+اكتب بالعربية الفصحى الخفيفة. الأسلوب: تعليمي، عملي، ملهم."""
+
+        user_msg = f"""أنشئ منشور إنستقرام تعليمي وقيّم عن: {topic}
+
+أعطني JSON فقط:
+{{
+  "caption": "نص المنشور — يبدأ بسؤال أو حقيقة مثيرة، نقاط عملية واضحة مع إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n💡 ابدأي رحلتك مع بيتي: bayti-frontend-three.vercel.app/sell",
+  "image_prompt": "Inspirational Instagram flat lay for [{topic}] — creative workspace, notebook, pen, small business items, warm inviting aesthetic. Choose unique style: bright airy / dark moody / rustic / elegant. No people, no text, no logos."
+}}"""
+
+    # Generate content
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1200,
+        system=system,
+        messages=[{"role": "user", "content": user_msg}]
+    )
+
+    import json as json_lib
+    text = response.content[0].text.strip()
+    text = text.replace("```json", "").replace("```", "").strip()
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    parsed = json_lib.loads(text[start:end])
+
+    # Use fixed hashtags for sellers and value, dynamic for events
+    if content_type == "events":
+        final_hashtags = parsed.get("hashtags", HASHTAGS)
+        # Ensure max 5 hashtags
+        tags = final_hashtags.split()[:5]
+        final_hashtags = " ".join(tags)
+    else:
+        final_hashtags = HASHTAGS
+
+    # Generate image
+    image_url = None
+    if openai_key:
+        try:
+            img_prompt = parsed.get("image_prompt", "Beautiful UAE artisan products flat lay, warm tones, no people, no text")
+            safe_prompt = f"{img_prompt}. High quality commercial photography. No people, no faces, no text, no logos."
+            img_response = httpx.post(
+                "https://api.openai.com/v1/images/generations",
+                headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
+                json={"model": "gpt-image-1", "prompt": safe_prompt, "n": 1, "size": "1024x1024"},
+                timeout=90
+            )
+            img_data = img_response.json()["data"][0]
+            if "url" in img_data:
+                image_url = img_data["url"]
+            elif "b64_json" in img_data:
+                image_url = f"data:image/png;base64,{img_data['b64_json']}"
+        except Exception as e:
+            pass
+
+    return {
+        "caption": parsed["caption"],
+        "hashtags": final_hashtags,
+        "image_url": image_url,
+        "type": content_type,
+        "event": parsed.get("event", "")
+    }
