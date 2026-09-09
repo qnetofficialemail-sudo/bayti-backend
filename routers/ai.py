@@ -453,48 +453,62 @@ def generate_instagram_content_v2(data: dict):
   "image_prompt": "Photorealistic Instagram photo perfectly capturing the mood and theme of [event]. Colors must match: festivals=vibrant warm, food=rich appetizing, art=colorful creative, sports=dynamic, nature=atmospheric. Authentic UAE setting. No people, no text, no logos."
 }}"""
 
-        # Use web search for real-time news
-        import json as json_lib
-        WEB_SEARCH_TOOL = {"type": "web_search_20250305", "name": "web_search"}
+        # Fetch real UAE news from RSS without web search tool
+        import json as json_lib, datetime as dt
+
+        def fetch_rss_news():
+            """Fetch latest UAE positive news from Gulf News RSS"""
+            try:
+                rss_urls = [
+                    "https://gulfnews.com/rss/uae",
+                    "https://www.khaleejtimes.com/rss.xml",
+                ]
+                headlines = []
+                for url in rss_urls:
+                    try:
+                        r = httpx.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+                        text = r.text
+                        import re
+                        titles = re.findall(r'<title><!\[CDATA\[(.*?)\]\]></title>', text)
+                        if not titles:
+                            titles = re.findall(r'<title>(.*?)</title>', text)
+                        # Filter positive news only
+                        negative_words = ['kill', 'crash', 'dead', 'murder', 'crime', 'war', 'attack', 'accident', 'arrest', 'جريمة', 'حادث', 'وفاة', 'قتل', 'حرب']
+                        for t in titles[2:12]:
+                            if not any(w.lower() in t.lower() for w in negative_words):
+                                headlines.append(t.strip())
+                        if headlines:
+                            break
+                    except:
+                        continue
+                return headlines[:5] if headlines else []
+            except:
+                return []
+
+        headlines = fetch_rss_news()
+        news_context = "\n".join([f"- {h}" for h in headlines]) if headlines else f"موسم {current_month} في الإمارات وفعالياته"
 
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=1500,
+            max_tokens=1200,
             system=system,
-            tools=[WEB_SEARCH_TOOL],
-            messages=[{"role": "user", "content": user_msg}]
+            messages=[{"role": "user", "content": f"""{user_msg}
+
+أبرز أخبار الإمارات اليوم:
+{news_context}
+
+اختر الخبر الأكثر إيجابية وبهجة وأنشئ منشوراً عنه."""}]
         )
 
-        # Handle tool use response
         final_text = ""
-        if response.stop_reason == "tool_use":
-            tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": "Search completed"})
-            follow_up = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=1500,
-                system=system,
-                tools=[WEB_SEARCH_TOOL],
-                messages=[
-                    {"role": "user", "content": user_msg},
-                    {"role": "assistant", "content": response.content},
-                    {"role": "user", "content": tool_results}
-                ]
-            )
-            for block in follow_up.content:
-                if hasattr(block, "text") and block.text:
-                    final_text = block.text
-        else:
-            for block in response.content:
-                if hasattr(block, "text") and block.text:
-                    final_text = block.text
+        for block in response.content:
+            if hasattr(block, "text") and block.text:
+                final_text = block.text
 
         text = final_text.strip().replace("```json", "").replace("```", "").strip()
         start = text.find("{")
         end = text.rfind("}") + 1
-        fallback = {"event": "فعالية الإمارات", "caption": final_text, "hashtags": "#بيتي #الإمارات", "image_prompt": "Beautiful UAE lifestyle scene"}
+        fallback = {"event": "فعاليات الإمارات", "caption": final_text, "hashtags": "#بيتي #الإمارات", "image_prompt": "Beautiful UAE lifestyle scene"}
         parsed = json_lib.loads(text[start:end]) if start >= 0 and end > start else fallback
 
         tags = parsed.get("hashtags", "#بيتي #الإمارات").split()[:5]
@@ -517,7 +531,7 @@ def generate_instagram_content_v2(data: dict):
 
         return {"caption": parsed["caption"], "hashtags": final_hashtags, "image_url": image_url, "type": content_type, "event": parsed.get("event", "")}
 
-    # ── Type 3: Value content ────────────────────────────────────────
+        # ── Type 3: Value content ────────────────────────────────────────
     else:  # value
         import random
         value_topics = [
