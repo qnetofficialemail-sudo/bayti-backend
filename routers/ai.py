@@ -433,27 +433,87 @@ def generate_instagram_content_v2(data: dict):
 
     # ── Type 2: Events & Trends ─────────────────────────────────────
     elif content_type == "events":
-        system = """أنت مدير محتوى إنستقرام خبير في السوق الإماراتي.
-تكتب محتوى ترفيهياً وتفاعلياً يعكس الفعاليات والترندات الحالية في الإمارات.
-اكتب بالعربية الفصحى الخفيفة. الأسلوب: حيوي، عصري، جذاب.
-ربط المحتوى ببيتي بشكل طبيعي وغير مباشر."""
+        system = """أنت مدير محتوى إنستقرام متخصص في المحتوى الإماراتي.
+مهمتك: ابحث عن أبرز خبر أو فعالية إيجابية في الإمارات اليوم ثم اكتب منشوراً جذاباً عنه.
+قواعد صارمة:
+- اكتب بالعربية الفصحى الخفيفة فقط
+- تجنّب تماماً: السياسة، الحروب، الجرائم، الحوادث، أي أخبار سلبية
+- ركّز على: الفعاليات، المهرجانات، الافتتاحات، الترندات الإيجابية، الإنجازات، الطقس، الموضة، الطعام، الفن، الرياضة
+- لا تذكر بيتي أو أي منصة أو رابط في المنشور
+- انهِ دائماً بسؤال تفاعلي ثم: تابعونا لمزيد 🏡"""
 
         user_msg = f"""اليوم: {current_date}
-الشهر: {current_month}
 
-أنت تكتب لحساب @baytimarketplace — سوق للمنتجات المنزلية في الإمارات.
-
-١. ابحث في معرفتك عن أبرز الفعاليات والأحداث في الإمارات هذا الشهر ({current_month}).
-٢. فكّر في الترندات الموسمية (رمضان، العيد، DSF، اليوم الوطني، الجمعة البيضاء، موسم المدارس، إلخ).
-٣. اكتب منشور تفاعلي يربط الفعالية/الترند بالمنتجات المنزلية والحرفية.
-
-أعطني JSON فقط:
+ابحث الآن عن أبرز خبر أو حدث إيجابي في الإمارات اليوم أو هذا الأسبوع.
+بعد البحث أعطني JSON فقط:
 {{
-  "event": "اسم الفعالية أو الترند",
-  "caption": "نص المنشور — يبدأ بجملة جذابة تعكس الفعالية، إيموجي كثيرة، ١٥٠-٢٠٠ كلمة، سؤال تفاعلي في النهاية، ثم:\n\n🛍️ اكتشفي منتجات محلية: bayti-frontend-three.vercel.app",
-  "hashtags": "٥ هاشتاقات مناسبة للفعالية + #بيتي",
-  "image_prompt": "Vibrant Instagram photo celebrating [event] in UAE context. Show relevant products or scene. Photorealistic, festive, warm colors. No people, no text, no logos."
+  "event": "عنوان الخبر أو الحدث",
+  "caption": "منشور إنستقرام بالعربية الفصحى الخفيفة — يبدأ بجملة جذابة عن الخبر، إيموجي مناسبة، ١٥٠-٢٠٠ كلمة، يتحدث عن الحدث بشكل ممتع وقيّم، سؤال تفاعلي، ثم:\n\nتابعونا لمزيد 🏡",
+  "hashtags": "٥ هاشتاقات: ٢-٣ عن الحدث تحديداً + #بيتي + #الإمارات",
+  "image_prompt": "Photorealistic Instagram photo perfectly capturing the mood and theme of [event]. Colors must match: festivals=vibrant warm, food=rich appetizing, art=colorful creative, sports=dynamic, nature=atmospheric. Authentic UAE setting. No people, no text, no logos."
 }}"""
+
+        # Use web search for real-time news
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1500,
+            system=system,
+            tools=[{{"type": "web_search_20250305", "name": "web_search"}}],
+            messages=[{{"role": "user", "content": user_msg}}]
+        )
+
+        import json as json_lib
+
+        # Handle tool use response
+        final_text = ""
+        if response.stop_reason == "tool_use":
+            tool_results = []
+            for block in response.content:
+                if block.type == "tool_use":
+                    tool_results.append({{"type": "tool_result", "tool_use_id": block.id, "content": "Search completed"}})
+            follow_up = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1500,
+                system=system,
+                tools=[{{"type": "web_search_20250305", "name": "web_search"}}],
+                messages=[
+                    {{"role": "user", "content": user_msg}},
+                    {{"role": "assistant", "content": response.content}},
+                    {{"role": "user", "content": tool_results}}
+                ]
+            )
+            for block in follow_up.content:
+                if hasattr(block, "text") and block.text:
+                    final_text = block.text
+        else:
+            for block in response.content:
+                if hasattr(block, "text") and block.text:
+                    final_text = block.text
+
+        text = final_text.strip().replace("```json", "").replace("```", "").strip()
+        start = text.find("{{")
+        end = text.rfind("}}") + 1
+        parsed = json_lib.loads(text[start:end]) if start >= 0 and end > start else {{"event": "فعالية الإمارات", "caption": final_text, "hashtags": "#بيتي #الإمارات", "image_prompt": "Beautiful UAE lifestyle scene"}}
+
+        tags = parsed.get("hashtags", "#بيتي #الإمارات").split()[:5]
+        final_hashtags = " ".join(tags)
+
+        image_url = None
+        if openai_key:
+            try:
+                img_prompt = parsed.get("image_prompt", "Beautiful UAE lifestyle scene")
+                img_response = httpx.post(
+                    "https://api.openai.com/v1/images/generations",
+                    headers={{"Authorization": f"Bearer {{openai_key}}", "Content-Type": "application/json"}},
+                    json={{"model": "gpt-image-1", "prompt": img_prompt + ". No people, no faces, no text, no logos.", "n": 1, "size": "1024x1024"}},
+                    timeout=90
+                )
+                img_data = img_response.json()["data"][0]
+                image_url = f"data:image/png;base64,{{img_data['b64_json']}}" if "b64_json" in img_data else img_data.get("url")
+            except Exception:
+                pass
+
+        return {{"caption": parsed["caption"], "hashtags": final_hashtags, "image_url": image_url, "type": content_type, "event": parsed.get("event", "")}}
 
     # ── Type 3: Value content ────────────────────────────────────────
     else:  # value
