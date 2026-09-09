@@ -515,7 +515,11 @@ def generate_instagram_content_v2(data: dict):
         final_hashtags = " ".join(tags)
 
         image_url = None
-        if openai_key:
+        if content_type == "sellers":
+            import random
+            MOCKUP_BASE = "https://bayti-frontend-three.vercel.app/mockups"
+            image_url = random.choice([f"{MOCKUP_BASE}/mockup_0{i}.png" for i in range(1, 6)])
+        elif openai_key:
             try:
                 img_prompt = parsed.get("image_prompt", "Beautiful UAE lifestyle scene")
                 img_response = httpx.post(
