@@ -454,15 +454,16 @@ def generate_instagram_content_v2(data: dict):
 }}"""
 
         # Use web search for real-time news
+        import json as json_lib
+        WEB_SEARCH_TOOL = {"type": "web_search_20250305", "name": "web_search"}
+
         response = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=1500,
             system=system,
-            tools=[{{"type": "web_search_20250305", "name": "web_search"}}],
-            messages=[{{"role": "user", "content": user_msg}}]
+            tools=[WEB_SEARCH_TOOL],
+            messages=[{"role": "user", "content": user_msg}]
         )
-
-        import json as json_lib
 
         # Handle tool use response
         final_text = ""
@@ -470,16 +471,16 @@ def generate_instagram_content_v2(data: dict):
             tool_results = []
             for block in response.content:
                 if block.type == "tool_use":
-                    tool_results.append({{"type": "tool_result", "tool_use_id": block.id, "content": "Search completed"}})
+                    tool_results.append({"type": "tool_result", "tool_use_id": block.id, "content": "Search completed"})
             follow_up = client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=1500,
                 system=system,
-                tools=[{{"type": "web_search_20250305", "name": "web_search"}}],
+                tools=[WEB_SEARCH_TOOL],
                 messages=[
-                    {{"role": "user", "content": user_msg}},
-                    {{"role": "assistant", "content": response.content}},
-                    {{"role": "user", "content": tool_results}}
+                    {"role": "user", "content": user_msg},
+                    {"role": "assistant", "content": response.content},
+                    {"role": "user", "content": tool_results}
                 ]
             )
             for block in follow_up.content:
@@ -491,9 +492,10 @@ def generate_instagram_content_v2(data: dict):
                     final_text = block.text
 
         text = final_text.strip().replace("```json", "").replace("```", "").strip()
-        start = text.find("{{")
-        end = text.rfind("}}") + 1
-        parsed = json_lib.loads(text[start:end]) if start >= 0 and end > start else {{"event": "فعالية الإمارات", "caption": final_text, "hashtags": "#بيتي #الإمارات", "image_prompt": "Beautiful UAE lifestyle scene"}}
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        fallback = {"event": "فعالية الإمارات", "caption": final_text, "hashtags": "#بيتي #الإمارات", "image_prompt": "Beautiful UAE lifestyle scene"}
+        parsed = json_lib.loads(text[start:end]) if start >= 0 and end > start else fallback
 
         tags = parsed.get("hashtags", "#بيتي #الإمارات").split()[:5]
         final_hashtags = " ".join(tags)
@@ -504,16 +506,16 @@ def generate_instagram_content_v2(data: dict):
                 img_prompt = parsed.get("image_prompt", "Beautiful UAE lifestyle scene")
                 img_response = httpx.post(
                     "https://api.openai.com/v1/images/generations",
-                    headers={{"Authorization": f"Bearer {{openai_key}}", "Content-Type": "application/json"}},
-                    json={{"model": "gpt-image-1", "prompt": img_prompt + ". No people, no faces, no text, no logos.", "n": 1, "size": "1024x1024"}},
+                    headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
+                    json={"model": "gpt-image-1", "prompt": img_prompt + ". No people, no faces, no text, no logos.", "n": 1, "size": "1024x1024"},
                     timeout=90
                 )
                 img_data = img_response.json()["data"][0]
-                image_url = f"data:image/png;base64,{{img_data['b64_json']}}" if "b64_json" in img_data else img_data.get("url")
+                image_url = f"data:image/png;base64,{img_data['b64_json']}" if "b64_json" in img_data else img_data.get("url")
             except Exception:
                 pass
 
-        return {{"caption": parsed["caption"], "hashtags": final_hashtags, "image_url": image_url, "type": content_type, "event": parsed.get("event", "")}}
+        return {"caption": parsed["caption"], "hashtags": final_hashtags, "image_url": image_url, "type": content_type, "event": parsed.get("event", "")}
 
     # ── Type 3: Value content ────────────────────────────────────────
     else:  # value
