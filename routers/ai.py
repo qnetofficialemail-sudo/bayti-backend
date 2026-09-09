@@ -635,14 +635,14 @@ def generate_instagram_content_v2(data: dict):
         tags = final_hashtags.split()[:5]
         final_hashtags = " ".join(tags)
     else:
-        final_hashtags = HASHTAGS
+        FIXED_HASHTAGS = "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #bayti"
 
     # Generate image
     image_url = None
     if openai_key:
         try:
-            img_prompt = parsed.get("image_prompt", "Beautiful UAE artisan products flat lay, warm tones, no people, no text")
-            safe_prompt = f"{img_prompt}. High quality commercial photography. No people, no faces, no text, no logos."
+            img_prompt = parsed.get("image_prompt", "Woman entrepreneur working from home UAE, warm lifestyle photography, authentic scene")
+            safe_prompt = f"{img_prompt}. High quality photography, warm tones. No text, no logos."
             img_response = httpx.post(
                 "https://api.openai.com/v1/images/generations",
                 headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
@@ -659,7 +659,7 @@ def generate_instagram_content_v2(data: dict):
 
     return {
         "caption": parsed["caption"],
-        "hashtags": final_hashtags,
+        "hashtags": FIXED_HASHTAGS,
         "image_url": image_url,
         "type": content_type,
         "event": parsed.get("event", "")
