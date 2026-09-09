@@ -307,3 +307,77 @@ Return only the JSON object, nothing else."""
         return {"success": True, "data": data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/instagram-content")
+def generate_instagram_content(data: dict):
+    """Generate Instagram post caption + AI image for Bayti"""
+    import anthropic, base64, httpx, os
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    openai_key = os.getenv("OPENAI_API_KEY")
+
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+
+    topic = data.get("topic", "دعوة البائعات المنزليات للانضمام إلى بيتي")
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    # Generate caption + image prompt together
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1200,
+        system="""أنت مدير محتوى إنستقرام لمنصة بيتي — سوق إماراتي للبائعات المنزليات.
+الموقع في مرحلة تجريبية. اكتب بالعربية الفصحى الخفيفة. لا تخترع أرقاماً.
+الأسلوب: دافئ، مشجع، احترافي. هوية بيتي: برتقالي دافئ، كريمي، طابع إماراتي منزلي.""",
+        messages=[{
+            "role": "user",
+            "content": f"""أنشئ منشور إنستقرام عن: {topic}
+
+أعطني JSON فقط بهذا الشكل:
+{{
+  "caption": "نص المنشور — يبدأ بجملة قوية، إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n🔗 سجّلي الآن: bayti-frontend-three.vercel.app/sell",
+  "hashtags": "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #دبي #الشارقة #bayti #UAE #handmade_uae #homebusiness",
+  "image_prompt": "Professional flat lay photography that visually represents [{topic}], warm orange and cream tones, UAE artisan aesthetic, golden light, Instagram square format, no people, no faces, no text, no logos"
+}}"""
+        }]
+    )
+
+    import json as json_lib
+    text = response.content[0].text.strip()
+    text = text.replace("```json", "").replace("```", "").strip()
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    parsed = json_lib.loads(text[start:end])
+
+    # Generate image if OpenAI key available
+    image_url = None
+    if openai_key:
+        try:
+            img_response = httpx.post(
+                "https://api.openai.com/v1/images/generations",
+                headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
+                json={
+                    "model": "gpt-image-1",
+                    "prompt": parsed["image_prompt"] + ". No people, no text, no logos.",
+                    "n": 1,
+                    "size": "1024x1024"
+                },
+                timeout=60
+            )
+            img_data = img_response.json()["data"][0]
+            if "url" in img_data:
+                image_url = img_data["url"]
+            elif "b64_json" in img_data:
+                # Store as data URL
+                image_url = f"data:image/png;base64,{img_data['b64_json']}"
+        except Exception:
+            pass
+
+    return {
+        "caption": parsed["caption"],
+        "hashtags": parsed["hashtags"],
+        "image_url": image_url,
+        "topic": topic
+    }
