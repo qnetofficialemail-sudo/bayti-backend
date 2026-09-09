@@ -428,8 +428,34 @@ def generate_instagram_content_v2(data: dict):
 أعطني JSON فقط:
 {{
   "caption": "نص المنشور — يبدأ بجملة قوية، إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n🔗 سجّلي الآن: bayti-frontend-three.vercel.app/sell",
-  "image_prompt": "Creative Instagram photo for [{topic}]. Choose one style: warm flat lay with handmade products / moody dark wood with candles / bright white marble with flowers / rustic stone with botanicals / elegant velvet with gold. Photorealistic, highly detailed. No people, no text, no logos."
+  "image_prompt": "Creative lifestyle Instagram photo for [{topic}]. Arab woman hands holding or crafting handmade product, warm UAE home setting, golden light. No text, no logos."
 }}"""
+
+        # Generate caption for sellers
+        import json as json_lib_s
+        response_s = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1000,
+            system=system,
+            messages=[{"role": "user", "content": user_msg}]
+        )
+        text_s = response_s.content[0].text.strip().replace("```json", "").replace("```", "").strip()
+        start_s = text_s.find("{")
+        end_s = text_s.rfind("}") + 1
+        parsed_s = json_lib_s.loads(text_s[start_s:end_s]) if start_s >= 0 and end_s > start_s else {"caption": text_s}
+
+        # Use real Bayti mockup screenshot (free, no DALL-E)
+        import random as random_s
+        MOCKUP_BASE = "https://bayti-frontend-three.vercel.app/mockups"
+        mockup_url = random_s.choice([f"{MOCKUP_BASE}/mockup_0{i}.png" for i in range(1, 6)])
+
+        return {
+            "caption": parsed_s.get("caption", text_s),
+            "hashtags": HASHTAGS,
+            "image_url": mockup_url,
+            "type": content_type,
+            "event": ""
+        }
 
     # ── Type 2: Events & Trends ─────────────────────────────────────
     elif content_type == "events":
