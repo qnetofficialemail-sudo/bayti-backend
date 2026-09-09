@@ -387,42 +387,15 @@ def generate_instagram_content(data: dict):
 
 @router.post("/instagram-content-v2")
 def generate_instagram_content_v2(data: dict):
-    """Generate Instagram content with 3 types: sellers, events/trends, value"""
-    import anthropic, base64, httpx, os, datetime, random
+    """Generate Instagram content — text only (3 types: sellers, events, value)"""
+    import anthropic, httpx, os, datetime, random, json as json_lib
 
     api_key = os.getenv("ANTHROPIC_API_KEY")
-    openai_key = os.getenv("OPENAI_API_KEY")
-
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
-    content_type = data.get("type", "sellers")  # sellers | events | value
-
-    # ── Regenerate image only ────────────────────────────────────────
-    if data.get("regenerate_image_only") and openai_key:
-        caption = data.get("current_caption", "")
-        # Generate image prompt from caption using Claude
-        client_tmp = anthropic.Anthropic(api_key=api_key)
-        prompt_resp = client_tmp.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=200,
-            messages=[{"role": "user", "content": f"Based on this Instagram caption, write a short English image prompt for DALL-E (max 50 words). Focus on visual scene, UAE lifestyle, warm tones. No text, no logos. Caption: {caption[:300]}"}]
-        )
-        img_prompt = prompt_resp.content[0].text.strip()
-        realistic_prompt = f"""Hyper-realistic lifestyle photography, Canon 5D quality, natural light. {img_prompt}. Modern UAE home setting, warm sunlight, shallow depth of field bokeh, authentic candid moment, professional yet cozy. No text, no watermarks, no logos."""
-        try:
-            img_response = httpx.post(
-                "https://api.openai.com/v1/images/generations",
-                headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
-                json={"model": "gpt-image-1", "prompt": realistic_prompt, "n": 1, "size": "1024x1024"},
-                timeout=90
-            )
-            img_data = img_response.json()["data"][0]
-            image_url = f"data:image/png;base64,{img_data['b64_json']}" if "b64_json" in img_data else img_data.get("url")
-            return {"image_url": image_url, "type": content_type}
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
     client = anthropic.Anthropic(api_key=api_key)
+    content_type = data.get("type", "sellers")
 
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=4)))
     current_date = now.strftime("%B %d, %Y")
@@ -430,189 +403,106 @@ def generate_instagram_content_v2(data: dict):
 
     HASHTAGS = "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #bayti"
 
-    # ── Type 1: Seller recruitment ──────────────────────────────────
+    # ── Type 1: Sellers ─────────────────────────────────────────────
     if content_type == "sellers":
-        import random
         topics = [
             "دعوة البائعات المنزليات للانضمام إلى بيتي قبل الإطلاق الرسمي",
             "مميزات البيع عبر بيتي — الذكاء الاصطناعي يكتب عنك",
             "نصيحة للبائعة المبتدئة: كيف تصوّرين منتجك باحترافية",
+            "استطلاع: أي فئة تفضلين؟ شموع، عبايات، حلويات؟",
             "كوني من الأوائل — مميزات حصرية لمن تسجّل الآن",
             "بيتي والبائعات: قصة نبنيها معاً",
             "رحلة من البيت إلى الزبون — كيف يعمل بيتي",
             "لماذا بيتي أفضل من الانستقرام للبيع؟",
             "خلف الكواليس: كيف نبني بيتي",
+            "كيف تحددين سعر منتجك بذكاء؟",
+            "أخطاء شائعة تقع فيها البائعات المبتدئات",
+            "كيف تصوّرين منتجك باحترافية من البيت؟",
+            "كيف تكتبين وصفاً جذاباً لمنتجك؟",
+            "كيف تجدين زبائنك الأوائل؟",
         ]
         topic = random.choice(topics)
+
         system = """أنت مدير محتوى إنستقرام لمنصة بيتي — سوق للبائعات المنزليات المقيمات في الإمارات من جميع الجنسيات.
 الموقع في مرحلة تجريبية. اكتب بالعربية الفصحى الخفيفة. لا تخترع أرقاماً.
 الأسلوب: دافئ، مشجع، احترافي.
-مهم: لا تخصّص المحتوى لجنسية معينة — الموقع لجميع النساء المقيمات في الإمارات."""
-
-        user_msg = f"""أنشئ منشور إنستقرام عن: {topic}
-أعطني JSON فقط:
-{{
-  "caption": "نص المنشور — يبدأ بجملة قوية، إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n🔗 سجّلي الآن: bayti-frontend-three.vercel.app/sell",
-  "image_prompt": "Hyper-realistic lifestyle photo for [{topic}]. Modern Arab woman entrepreneur at home, natural candid moment, shallow depth of field, warm golden sunlight, modern UAE home decor. Canon DSLR quality, photojournalistic style. No text, no logos, no watermarks."
-}}"""
-
-        # Generate caption for sellers
-        import json as json_lib_s, random as random_s
-        response_s = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1000,
-            system=system,
-            messages=[{"role": "user", "content": user_msg}]
-        )
-        text_s = response_s.content[0].text.strip().replace("```json", "").replace("```", "").strip()
-        start_s = text_s.find("{")
-        end_s = text_s.rfind("}") + 1
-        parsed_s = json_lib_s.loads(text_s[start_s:end_s]) if start_s >= 0 and end_s > start_s else {"caption": text_s}
-
-        # Smart image selection based on topic
-        # Topics about the platform/registration → mockup (free)
-        # Topics about tips/photography/pricing → DALL-E lifestyle photo
-        PLATFORM_KEYWORDS = ["انضمام", "تسجيل", "بيتي", "موقع", "منصة", "مميزات", "لوحة تحكم", "إطلاق", "أوائل", "خلف الكواليس"]
-        use_mockup = any(kw in topic for kw in PLATFORM_KEYWORDS)
-
-        if use_mockup:
-            MOCKUP_BASE = "https://bayti-frontend-three.vercel.app/mockups"
-            image_url_s = random_s.choice([f"{MOCKUP_BASE}/mockup_0{i}.png" for i in range(1, 6)])
-        else:
-            # Generate relevant lifestyle image with DALL-E
-            image_url_s = None
-            if openai_key:
-                try:
-                    img_prompt = parsed_s.get("image_prompt", f"Woman entrepreneur at home UAE, {topic}, warm lifestyle photography")
-                    safe_prompt = f"{img_prompt}. Authentic UAE lifestyle, warm tones. No text, no logos."
-                    img_response = httpx.post(
-                        "https://api.openai.com/v1/images/generations",
-                        headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
-                        json={"model": "gpt-image-1", "prompt": safe_prompt, "n": 1, "size": "1024x1024"},
-                        timeout=90
-                    )
-                    img_data = img_response.json()["data"][0]
-                    image_url_s = f"data:image/png;base64,{img_data['b64_json']}" if "b64_json" in img_data else img_data.get("url")
-                except Exception:
-                    # Fallback to mockup
-                    MOCKUP_BASE = "https://bayti-frontend-three.vercel.app/mockups"
-                    image_url_s = random_s.choice([f"{MOCKUP_BASE}/mockup_0{i}.png" for i in range(1, 6)])
-
-        return {
-            "caption": parsed_s.get("caption", text_s),
-            "hashtags": HASHTAGS,
-            "image_url": image_url_s,
-            "type": content_type,
-            "event": ""
-        }
-
-    # ── Type 2: Events & Trends ─────────────────────────────────────
-    elif content_type == "events":
-        system = """أنت مدير محتوى إنستقرام متخصص في المحتوى الإماراتي.
-مهمتك: ابحث عن أبرز خبر أو فعالية إيجابية في الإمارات اليوم ثم اكتب منشوراً جذاباً عنه.
-قواعد صارمة:
-- اكتب بالعربية الفصحى الخفيفة فقط
-- تجنّب تماماً: السياسة، الحروب، الجرائم، الحوادث، أي أخبار سلبية
-- ركّز على: الفعاليات، المهرجانات، الافتتاحات، الترندات الإيجابية، الإنجازات، الطقس، الموضة، الطعام، الفن، الرياضة
-- لا تذكر بيتي أو أي منصة أو رابط في المنشور
-- انهِ دائماً بسؤال تفاعلي ثم: تابعونا لمزيد 🏡"""
-
-        user_msg = f"""اليوم: {current_date}
-
-ابحث الآن عن أبرز خبر أو حدث إيجابي في الإمارات اليوم أو هذا الأسبوع.
-بعد البحث أعطني JSON فقط:
-{{
-  "event": "عنوان الخبر أو الحدث",
-  "caption": "منشور إنستقرام بالعربية الفصحى الخفيفة — يبدأ بجملة جذابة عن الخبر، إيموجي مناسبة، ١٥٠-٢٠٠ كلمة، يتحدث عن الحدث بشكل ممتع وقيّم، سؤال تفاعلي، ثم:\n\nتابعونا لمزيد 🏡",
-  "hashtags": "٥ هاشتاقات: ٢-٣ عن الحدث تحديداً + #بيتي + #الإمارات",
-  "image_prompt": "Photorealistic Instagram photo perfectly capturing the mood and theme of [event]. Colors must match: festivals=vibrant warm, food=rich appetizing, art=colorful creative, sports=dynamic, nature=atmospheric. Authentic UAE setting. No people, no text, no logos."
-}}"""
-
-        # Fetch real UAE news from RSS without web search tool
-        import json as json_lib, datetime as dt
-
-        def fetch_rss_news():
-            """Fetch latest UAE positive news from Gulf News RSS"""
-            try:
-                rss_urls = [
-                    "https://gulfnews.com/rss/uae",
-                    "https://www.khaleejtimes.com/rss.xml",
-                ]
-                headlines = []
-                for url in rss_urls:
-                    try:
-                        r = httpx.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
-                        text = r.text
-                        import re
-                        titles = re.findall(r'<title><!\[CDATA\[(.*?)\]\]></title>', text)
-                        if not titles:
-                            titles = re.findall(r'<title>(.*?)</title>', text)
-                        # Filter positive news only
-                        negative_words = ['kill', 'crash', 'dead', 'murder', 'crime', 'war', 'attack', 'accident', 'arrest', 'جريمة', 'حادث', 'وفاة', 'قتل', 'حرب']
-                        for t in titles[2:12]:
-                            if not any(w.lower() in t.lower() for w in negative_words):
-                                headlines.append(t.strip())
-                        if headlines:
-                            break
-                    except:
-                        continue
-                return headlines[:5] if headlines else []
-            except:
-                return []
-
-        headlines = fetch_rss_news()
-        news_context = "\n".join([f"- {h}" for h in headlines]) if headlines else f"موسم {current_month} في الإمارات وفعالياته"
+لا تخصّص المحتوى لجنسية معينة — الموقع لجميع النساء المقيمات في الإمارات."""
 
         response = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=1200,
+            max_tokens=1000,
             system=system,
-            messages=[{"role": "user", "content": f"""{user_msg}
+            messages=[{"role": "user", "content": f"""أنشئ منشور إنستقرام عن: {topic}
 
-أبرز أخبار الإمارات اليوم:
-{news_context}
-
-اختر الخبر الأكثر إيجابية وبهجة وأنشئ منشوراً عنه."""}]
+اكتب النص مباشرة بدون JSON وبدون عناوين.
+يبدأ بجملة جذابة قوية، إيموجي مناسبة، ١٥٠-٢٠٠ كلمة.
+ينتهي بـ:
+🔗 سجّلي الآن: bayti-frontend-three.vercel.app/sell"""}]
         )
 
-        final_text = ""
-        for block in response.content:
-            if hasattr(block, "text") and block.text:
-                final_text = block.text
+        caption = response.content[0].text.strip()
+        return {"caption": caption, "hashtags": HASHTAGS, "image_url": None, "type": content_type, "event": ""}
 
-        text = final_text.strip().replace("```json", "").replace("```", "").strip()
-        start = text.find("{")
-        end = text.rfind("}") + 1
-        fallback = {"event": "فعاليات الإمارات", "caption": final_text, "hashtags": "#بيتي #الإمارات", "image_prompt": "Beautiful UAE lifestyle scene"}
-        parsed = json_lib.loads(text[start:end]) if start >= 0 and end > start else fallback
+    # ── Type 2: Events & Trends (with web search) ────────────────────
+    elif content_type == "events":
+        system = """أنت مدير محتوى إنستقرام متخصص في المحتوى الإماراتي.
+ابحث عن أبرز خبر أو فعالية إيجابية في الإمارات اليوم واكتب منشوراً عنه.
+قواعد صارمة:
+- اكتب بالعربية الفصحى الخفيفة
+- تجنّب تماماً: السياسة، الحروب، الجرائم، الحوادث، أي أخبار سلبية
+- ركّز على: الفعاليات، المهرجانات، الافتتاحات، الإنجازات، الطعام، الفن، الرياضة، الطقس
+- لا تذكر بيتي أو أي منصة في المنشور
+- انهِ بسؤال تفاعلي ثم: تابعونا لمزيد 🏡"""
+
+        WEB_SEARCH_TOOL = {"type": "web_search_20250305", "name": "web_search"}
+
+        user_msg = f"""اليوم: {current_date}
+
+ابحث الآن عن أبرز خبر أو فعالية إيجابية في الإمارات اليوم أو هذا الأسبوع.
+ابحث عن: UAE events {current_month} 2026, Dubai festivals today, Abu Dhabi events, فعاليات الإمارات اليوم
+
+بعد البحث اختر الأكثر إيجابية وجمالاً وأعطني JSON فقط:
+{{
+  "event": "عنوان الحدث",
+  "caption": "منشور إنستقرام بالعربية الفصحى الخفيفة — جذاب، ١٥٠-٢٠٠ كلمة، سؤال تفاعلي، ثم:\n\nتابعونا لمزيد 🏡",
+  "hashtags": "٥ هاشتاقات: ٢-٣ عن الحدث + #بيتي + #الإمارات"
+}}"""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1500,
+            system=system,
+            tools=[WEB_SEARCH_TOOL],
+            messages=[{"role": "user", "content": user_msg}]
+        )
+
+        # Handle multi-turn tool use
+        msgs = [{"role": "user", "content": user_msg}]
+        for _ in range(5):
+            if response.stop_reason != "tool_use":
+                break
+            tool_results = [{"type": "tool_result", "tool_use_id": b.id, "content": "Search completed"} for b in response.content if b.type == "tool_use"]
+            msgs.append({"role": "assistant", "content": response.content})
+            msgs.append({"role": "user", "content": tool_results})
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1500,
+                system=system,
+                tools=[WEB_SEARCH_TOOL],
+                messages=msgs
+            )
+
+        final_text = next((b.text for b in response.content if hasattr(b, "text") and b.text), "")
+        final_text = final_text.strip().replace("```json", "").replace("```", "").strip()
+        start = final_text.find("{")
+        end = final_text.rfind("}") + 1
+        parsed = json_lib.loads(final_text[start:end]) if start >= 0 and end > start else {"event": "فعالية الإمارات", "caption": final_text, "hashtags": "#بيتي #الإمارات"}
 
         tags = parsed.get("hashtags", "#بيتي #الإمارات").split()[:5]
-        final_hashtags = " ".join(tags)
+        return {"caption": parsed["caption"], "hashtags": " ".join(tags), "image_url": None, "type": content_type, "event": parsed.get("event", "")}
 
-        image_url = None
-        if content_type == "sellers":
-            import random
-            MOCKUP_BASE = "https://bayti-frontend-three.vercel.app/mockups"
-            image_url = random.choice([f"{MOCKUP_BASE}/mockup_0{i}.png" for i in range(1, 6)])
-        elif openai_key:
-            try:
-                img_prompt = parsed.get("image_prompt", "Beautiful UAE lifestyle scene")
-                img_response = httpx.post(
-                    "https://api.openai.com/v1/images/generations",
-                    headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
-                    json={"model": "gpt-image-1", "prompt": img_prompt + ". No people, no faces, no text, no logos.", "n": 1, "size": "1024x1024"},
-                    timeout=90
-                )
-                img_data = img_response.json()["data"][0]
-                image_url = f"data:image/png;base64,{img_data['b64_json']}" if "b64_json" in img_data else img_data.get("url")
-            except Exception:
-                pass
-
-        return {"caption": parsed["caption"], "hashtags": final_hashtags, "image_url": image_url, "type": content_type, "event": parsed.get("event", "")}
-
-        # ── Type 3: Value content ────────────────────────────────────────
-    else:  # value
-        import random
+    # ── Type 3: Value content ────────────────────────────────────────
+    else:
         value_topics = [
             "٥ نصائح لتصوير منتجاتك باحترافية من البيت",
             "كيف تحددين سعر منتجك بذكاء؟",
@@ -622,78 +512,27 @@ def generate_instagram_content_v2(data: dict):
             "كيف تكتبين وصفاً جذاباً لمنتجك؟",
             "نصائح لتغليف منتجاتك باحترافية",
             "كيف تتعاملين مع الزبون الصعب؟",
-            "استراتيجية التسعير للمنتجات الحرفية",
             "كيف تجدين زبائنك الأوائل؟",
+            "لماذا تحتاجين قصة لعلامتك التجارية؟",
         ]
         topic = random.choice(value_topics)
-        system = """أنت خبير تسويق ومحتوى متخصص في ريادة الأعمال المنزلية في الإمارات.
+
+        system = """أنت خبير تسويق ومحتوى متخصص في ريادة الأعمال المنزلية.
 تكتب محتوى قيّماً وعملياً يساعد النساء على تطوير مشاريعهن.
 اكتب بالعربية الفصحى الخفيفة. الأسلوب: تعليمي، عملي، ملهم."""
 
-        user_msg = f"""أنشئ منشور إنستقرام تعليمي وقيّم عن: {topic}
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1000,
+            system=system,
+            messages=[{"role": "user", "content": f"""أنشئ منشور إنستقرام تعليمي عن: {topic}
 
-أعطني JSON فقط:
-{{
-  "caption": "نص المنشور — يبدأ بسؤال أو حقيقة مثيرة، نقاط عملية واضحة مع إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n💡 ابدأي رحلتك مع بيتي: bayti-frontend-three.vercel.app/sell",
-  "image_prompt": "Inspirational Instagram flat lay for [{topic}] — creative workspace, notebook, pen, small business items, warm inviting aesthetic. Choose unique style: bright airy / dark moody / rustic / elegant. No people, no text, no logos."
-}}"""
+اكتب النص مباشرة بدون JSON.
+يبدأ بسؤال أو حقيقة مثيرة، نقاط عملية واضحة مع إيموجي، ١٥٠-٢٠٠ كلمة.
+ينتهي بـ:
+💡 ابدأي رحلتك مع بيتي: bayti-frontend-three.vercel.app/sell"""}]
+        )
 
-    # Generate content
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=1200,
-        system=system,
-        messages=[{"role": "user", "content": user_msg}]
-    )
+        caption = response.content[0].text.strip()
+        return {"caption": caption, "hashtags": HASHTAGS, "image_url": None, "type": content_type, "event": ""}
 
-    import json as json_lib
-    text = response.content[0].text.strip()
-    text = text.replace("```json", "").replace("```", "").strip()
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    parsed = json_lib.loads(text[start:end])
-
-    # Use fixed hashtags for sellers and value, dynamic for events
-    if content_type == "events":
-        final_hashtags = parsed.get("hashtags", HASHTAGS)
-        # Ensure max 5 hashtags
-        tags = final_hashtags.split()[:5]
-        final_hashtags = " ".join(tags)
-    else:
-        FIXED_HASHTAGS = "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #bayti"
-
-    # Generate image
-    image_url = None
-    if openai_key:
-        try:
-            base_prompt = parsed.get("image_prompt", "")
-            # Build a highly realistic, modern prompt
-            img_prompt = f"""Hyper-realistic lifestyle photography, Canon 5D quality, natural light.
-Scene: {base_prompt if base_prompt else "Arab woman entrepreneur working at home, crafting handmade products"}.
-Style: Modern UAE home setting, warm natural sunlight from window, shallow depth of field bokeh background.
-Mood: Authentic, aspirational, relatable — like a real Instagram influencer photo.
-Details: Clean modern home decor, neutral tones with warm accents, professional yet cozy atmosphere.
-Technical: 85mm lens, f/1.8 aperture, golden hour lighting, no filters, photojournalistic quality.
-Strictly NO text, NO watermarks, NO logos, NO artificial-looking elements."""
-            safe_prompt = img_prompt
-            img_response = httpx.post(
-                "https://api.openai.com/v1/images/generations",
-                headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
-                json={"model": "gpt-image-1", "prompt": safe_prompt, "n": 1, "size": "1024x1024"},
-                timeout=90
-            )
-            img_data = img_response.json()["data"][0]
-            if "url" in img_data:
-                image_url = img_data["url"]
-            elif "b64_json" in img_data:
-                image_url = f"data:image/png;base64,{img_data['b64_json']}"
-        except Exception as e:
-            pass
-
-    return {
-        "caption": parsed["caption"],
-        "hashtags": FIXED_HASHTAGS,
-        "image_url": image_url,
-        "type": content_type,
-        "event": parsed.get("event", "")
-    }
