@@ -409,11 +409,12 @@ def generate_instagram_content_v2(data: dict):
             messages=[{"role": "user", "content": f"Based on this Instagram caption, write a short English image prompt for DALL-E (max 50 words). Focus on visual scene, UAE lifestyle, warm tones. No text, no logos. Caption: {caption[:300]}"}]
         )
         img_prompt = prompt_resp.content[0].text.strip()
+        realistic_prompt = f"""Hyper-realistic lifestyle photography, Canon 5D quality, natural light. {img_prompt}. Modern UAE home setting, warm sunlight, shallow depth of field bokeh, authentic candid moment, professional yet cozy. No text, no watermarks, no logos."""
         try:
             img_response = httpx.post(
                 "https://api.openai.com/v1/images/generations",
                 headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
-                json={"model": "gpt-image-1", "prompt": img_prompt + ". No text, no logos, no faces.", "n": 1, "size": "1024x1024"},
+                json={"model": "gpt-image-1", "prompt": realistic_prompt, "n": 1, "size": "1024x1024"},
                 timeout=90
             )
             img_data = img_response.json()["data"][0]
@@ -452,7 +453,7 @@ def generate_instagram_content_v2(data: dict):
 أعطني JSON فقط:
 {{
   "caption": "نص المنشور — يبدأ بجملة قوية، إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n🔗 سجّلي الآن: bayti-frontend-three.vercel.app/sell",
-  "image_prompt": "Creative lifestyle Instagram photo for [{topic}]. Arab woman hands holding or crafting handmade product, warm UAE home setting, golden light. No text, no logos."
+  "image_prompt": "Hyper-realistic lifestyle photo for [{topic}]. Modern Arab woman entrepreneur at home, natural candid moment, shallow depth of field, warm golden sunlight, modern UAE home decor. Canon DSLR quality, photojournalistic style. No text, no logos, no watermarks."
 }}"""
 
         # Generate caption for sellers
@@ -665,8 +666,16 @@ def generate_instagram_content_v2(data: dict):
     image_url = None
     if openai_key:
         try:
-            img_prompt = parsed.get("image_prompt", "Woman entrepreneur working from home UAE, warm lifestyle photography, authentic scene")
-            safe_prompt = f"{img_prompt}. High quality photography, warm tones. No text, no logos."
+            base_prompt = parsed.get("image_prompt", "")
+            # Build a highly realistic, modern prompt
+            img_prompt = f"""Hyper-realistic lifestyle photography, Canon 5D quality, natural light.
+Scene: {base_prompt if base_prompt else "Arab woman entrepreneur working at home, crafting handmade products"}.
+Style: Modern UAE home setting, warm natural sunlight from window, shallow depth of field bokeh background.
+Mood: Authentic, aspirational, relatable — like a real Instagram influencer photo.
+Details: Clean modern home decor, neutral tones with warm accents, professional yet cozy atmosphere.
+Technical: 85mm lens, f/1.8 aperture, golden hour lighting, no filters, photojournalistic quality.
+Strictly NO text, NO watermarks, NO logos, NO artificial-looking elements."""
+            safe_prompt = img_prompt
             img_response = httpx.post(
                 "https://api.openai.com/v1/images/generations",
                 headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
