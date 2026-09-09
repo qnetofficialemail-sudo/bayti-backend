@@ -388,7 +388,7 @@ def generate_instagram_content(data: dict):
 @router.post("/instagram-content-v2")
 def generate_instagram_content_v2(data: dict):
     """Generate Instagram content with 3 types: sellers, events/trends, value"""
-    import anthropic, base64, httpx, os, datetime
+    import anthropic, base64, httpx, os, datetime, random
 
     api_key = os.getenv("ANTHROPIC_API_KEY")
     openai_key = os.getenv("OPENAI_API_KEY")
@@ -397,6 +397,30 @@ def generate_instagram_content_v2(data: dict):
         raise HTTPException(status_code=500, detail="AI service not configured")
 
     content_type = data.get("type", "sellers")  # sellers | events | value
+
+    # ── Regenerate image only ────────────────────────────────────────
+    if data.get("regenerate_image_only") and openai_key:
+        caption = data.get("current_caption", "")
+        # Generate image prompt from caption using Claude
+        client_tmp = anthropic.Anthropic(api_key=api_key)
+        prompt_resp = client_tmp.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=200,
+            messages=[{"role": "user", "content": f"Based on this Instagram caption, write a short English image prompt for DALL-E (max 50 words). Focus on visual scene, UAE lifestyle, warm tones. No text, no logos. Caption: {caption[:300]}"}]
+        )
+        img_prompt = prompt_resp.content[0].text.strip()
+        try:
+            img_response = httpx.post(
+                "https://api.openai.com/v1/images/generations",
+                headers={"Authorization": f"Bearer {openai_key}", "Content-Type": "application/json"},
+                json={"model": "gpt-image-1", "prompt": img_prompt + ". No text, no logos, no faces.", "n": 1, "size": "1024x1024"},
+                timeout=90
+            )
+            img_data = img_response.json()["data"][0]
+            image_url = f"data:image/png;base64,{img_data['b64_json']}" if "b64_json" in img_data else img_data.get("url")
+            return {"image_url": image_url, "type": content_type}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
     client = anthropic.Anthropic(api_key=api_key)
 
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=4)))
