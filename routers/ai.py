@@ -340,7 +340,7 @@ def generate_instagram_content(data: dict):
 أعطني JSON فقط بهذا الشكل:
 {{
   "caption": "نص المنشور — يبدأ بجملة قوية، إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n🔗 سجّلي الآن: bayti-frontend-three.vercel.app/sell",
-  "hashtags": "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #دبي #الشارقة #bayti #UAE #handmade_uae #homebusiness",
+  "hashtags": "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #bayti",
   "image_prompt": "Professional flat lay photography that visually represents [{topic}], warm orange and cream tones, UAE artisan aesthetic, golden light, Instagram square format, no people, no faces, no text, no logos"
 }}"""
         }]
