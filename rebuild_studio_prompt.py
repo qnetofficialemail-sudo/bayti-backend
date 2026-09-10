@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+import os
+
+BACKEND = r"C:\Users\Dell\Desktop\homemarketplace\backend"
+
+new_studio = '''from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from core.database import get_db
 from core.auth import get_current_user
@@ -150,3 +154,10 @@ Respond in this exact JSON format:
         "model_style": model_style,
         "background": background,
     }
+'''
+
+studio_path = os.path.join(BACKEND, "routers", "studio.py")
+with open(studio_path, "w", encoding="utf-8") as f:
+    f.write(new_studio)
+print("✅ Rebuilt studio.py — now generates prompts instead of images")
+print("\nDone! Push backend.")
