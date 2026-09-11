@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+# This rebuilds growth.py with correct encoding and updated system prompt
+content = r'''from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import Column, Integer, String, Text, DateTime, func
 from core.database import get_db, Base
@@ -255,3 +256,8 @@ def get_objections(current_user = Depends(get_current_user)):
         {"q": "لست مهتمة الآن.",
          "a": "نحترم ذلك تماماً. يسعدنا التواصل معكم مستقبلاً عندما يكون الوقت مناسباً."},
     ]
+'''
+
+with open("routers/growth.py", "w", encoding="utf-8") as f:
+    f.write(content)
+print("Done! Size:", len(content))
