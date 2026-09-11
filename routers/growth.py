@@ -68,7 +68,7 @@ INITIAL_ACCOUNTS = [
 
 @router.get("/accounts")
 def get_accounts(status: str = None, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     q = db.query(OutreachAccount)
     if status:
@@ -77,7 +77,7 @@ def get_accounts(status: str = None, db: Session = Depends(get_db), current_user
 
 @router.post("/accounts")
 def add_account(data: dict, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     acc = OutreachAccount(**{k: v for k, v in data.items() if k in OutreachAccount.__table__.columns.keys()})
     db.add(acc)
@@ -87,7 +87,7 @@ def add_account(data: dict, db: Session = Depends(get_db), current_user: dict = 
 
 @router.patch("/accounts/{account_id}")
 def update_account(account_id: int, data: dict, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     acc = db.query(OutreachAccount).filter(OutreachAccount.id == account_id).first()
     if not acc:
@@ -108,7 +108,7 @@ def update_account(account_id: int, data: dict, db: Session = Depends(get_db), c
 
 @router.delete("/accounts/{account_id}")
 def delete_account(account_id: int, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     acc = db.query(OutreachAccount).filter(OutreachAccount.id == account_id).first()
     if acc:
@@ -118,7 +118,7 @@ def delete_account(account_id: int, db: Session = Depends(get_db), current_user:
 
 @router.get("/stats")
 def get_stats(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     total    = db.query(OutreachAccount).count()
     statuses = db.query(OutreachAccount.status, func.count()).group_by(OutreachAccount.status).all()
@@ -145,7 +145,7 @@ def get_stats(db: Session = Depends(get_db), current_user: dict = Depends(get_cu
 
 @router.post("/generate-message")
 def generate_message(data: dict, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
@@ -192,7 +192,7 @@ def generate_message(data: dict, db: Session = Depends(get_db), current_user: di
 
 @router.post("/daily-brief")
 def get_daily_brief(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     api_key = os.getenv("ANTHROPIC_API_KEY")
     stats = get_stats(db=db, current_user=current_user)
@@ -234,7 +234,7 @@ def get_daily_brief(db: Session = Depends(get_db), current_user: dict = Depends(
 
 @router.post("/seed-accounts")
 def seed_accounts(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     added = 0
     for acc_data in INITIAL_ACCOUNTS:
@@ -247,7 +247,7 @@ def seed_accounts(db: Session = Depends(get_db), current_user: dict = Depends(ge
 
 @router.get("/objections")
 def get_objections(current_user: dict = Depends(get_current_user)):
-    if current_user.get("role") != "admin":
+    if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     return [
         {"q": "ما الرسوم أو العمولة؟",
