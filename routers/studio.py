@@ -35,6 +35,11 @@ async def analyze_product(
     background:    str = Form("white_studio"),
     framing:       str = Form("full_body"),
     output_format: str = Form("product_square"),
+    model_size:    str = Form("regular"),
+    lighting:      str = Form("soft_natural"),
+    season:        str = Form("none"),
+    pose:          str = Form("standing_neutral"),
+    extra_notes:   str = Form(""),
     image: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -58,6 +63,17 @@ async def analyze_product(
     framing_desc = FRAMING_LABELS.get(framing, FRAMING_LABELS["full_body"])
     format_desc  = FORMAT_LABELS.get(output_format, FORMAT_LABELS["product_square"])
 
+    size_map = {"slim": "slim build", "regular": "regular/average build", "curvy": "curvy/full-figured build"}
+    light_map = {"soft_natural": "soft natural daylight", "golden_hour": "warm golden hour sunset light", "studio_bright": "bright clean studio lighting", "moody_dark": "moody dramatic low-key lighting"}
+    pose_map = {"standing_neutral": "standing in a natural neutral pose", "walking": "walking dynamically toward the camera", "sitting_elegant": "sitting elegantly", "looking_side": "looking slightly to the side in a candid pose"}
+    season_map = {"none": "", "summer": "summer vibes, bright and airy", "winter": "winter cozy atmosphere", "ramadan": "Ramadan elegant festive mood, subtle lantern or crescent elements in background", "eid": "Eid celebration joyful elegant mood"}
+
+    size_desc    = size_map.get(model_size, "regular/average build")
+    light_desc   = light_map.get(lighting, "soft natural daylight")
+    pose_desc    = pose_map.get(pose, "standing in a natural neutral pose")
+    season_desc  = season_map.get(season, "")
+    extra_desc   = extra_notes.strip() if extra_notes else ""
+
     type_hints = {
         "apparel":  "clothing item (abaya, dress, top, jacket, etc.)",
         "bag":      "bag or handbag",
@@ -76,10 +92,14 @@ Always write prompts in English. Be specific and detailed. Focus on accuracy."""
     user_prompt = f"""Analyze this {type_hint} image carefully and generate a Gemini image generation prompt.
 
 The generated image should show:
-- Model: {model_desc}
-- Background: {bg_desc}  
+- Model: {model_desc}, {size_desc}
+- Pose: {pose_desc}
+- Background: {bg_desc}
+- Lighting: {light_desc}
 - Shot: {framing_desc}, {format_desc}
+- Season/Mood: {season_desc if season_desc else "timeless, no specific season"}
 - Style: professional commercial fashion photography, editorial quality
+- Special requests: {extra_desc if extra_desc else "none"}
 
 Extract from the image:
 1. The EXACT color(s) — be very specific (e.g. "jet black", "ivory white", "dusty rose")
