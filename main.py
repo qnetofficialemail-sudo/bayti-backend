@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from core.database import engine, Base, SessionLocal
 from models.user import User, SellerProfile, Category, Product, Order, OrderItem, SellerApplication, ProductVariant
-from routers import auth, products, orders, sellers, ai, translation, admin, reviews, push, studio
+from routers import auth, products, orders, sellers, ai, translation, admin, reviews, push, studio, growth
 from routers import applications
 from core.auth import hash_password
 import os
@@ -42,6 +42,7 @@ app.include_router(orders.router)
 app.include_router(sellers.router)
 app.include_router(ai.router)
 app.include_router(studio.router)
+app.include_router(growth.router)
 app.include_router(translation.router)
 app.include_router(reviews.router)
 app.include_router(push.router)
