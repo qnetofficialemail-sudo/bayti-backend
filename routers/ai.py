@@ -339,7 +339,7 @@ def generate_instagram_content(data: dict):
 
 أعطني JSON فقط بهذا الشكل:
 {{
-  "caption": "نص المنشور — يبدأ بجملة قوية، إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n🔗 سجّلي الآن: bayti-frontend-three.vercel.app/sell",
+  "caption": "نص المنشور — يبدأ بجملة قوية، إيموجي، ١٥٠-٢٠٠ كلمة، ينتهي بـ:\n\n🔗 سجّلي الآن: bayti.ink/sell",
   "image_prompt": "Creative Instagram-worthy photograph related to [{topic}]. Choose ONE of these styles randomly: (1) Warm lifestyle flat lay with handmade UAE products, morning golden light, linen texture, terracotta and cream tones (2) Moody overhead shot, dark wood surface, candles lit, dramatic shadows, rich amber and orange (3) Bright airy aesthetic, white marble, fresh flowers, pastel accents, clean minimalist (4) Rustic outdoor scene, natural stone surface, dried botanicals, earthy browns and warm greens (5) Elegant luxury setup, velvet fabric, gold accents, deep jewel tones, sophisticated lighting. Make it photorealistic, highly detailed, unique composition. No people, no text, no logos, no faces."
 }}"""
         }]
@@ -455,7 +455,7 @@ def generate_instagram_content_v2(data: dict):
 اكتب النص مباشرة بدون JSON وبدون عناوين.
 يبدأ بجملة جذابة قوية، إيموجي مناسبة، ١٥٠-٢٠٠ كلمة.
 ينتهي بـ:
-🔗 سجّلي الآن: bayti-frontend-three.vercel.app/sell"""}]
+🔗 سجّلي الآن: bayti.ink/sell"""}]
         )
 
         caption = response.content[0].text.strip()
@@ -548,7 +548,7 @@ def generate_instagram_content_v2(data: dict):
 اكتب النص مباشرة بدون JSON.
 يبدأ بسؤال أو حقيقة مثيرة، نقاط عملية واضحة مع إيموجي، ١٥٠-٢٠٠ كلمة.
 ينتهي بـ:
-💡 ابدأي رحلتك مع بيتي: bayti-frontend-three.vercel.app/sell"""}]
+💡 ابدأي رحلتك مع بيتي: bayti.ink/sell"""}]
         )
 
         caption = response.content[0].text.strip()

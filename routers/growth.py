@@ -170,7 +170,7 @@ def generate_message(data: dict, db: Session = Depends(get_db), current_user = D
 - اطلب الإذن بالتواصل في الرسالة الأولى، لا ترسل كل التفاصيل دفعة واحدة
 
 مميزات بيتي: ذكاء اصطناعي يكتب وصف المنتج، استوديو ذكي يولّد صور تسويقية مجاناً، وصول لجمهور واسع في الإمارات، مجاني تماماً في المرحلة التجريبية، أول 10 بائعين يحصلون على صفحة مميزة مجاناً.
-رابط التسجيل: bayti-frontend-three.vercel.app/sell""",
+رابط التسجيل: bayti.ink/sell""",
         messages=[{"role": "user", "content": f"""اكتب رسالة إنستقرام للحساب @{username} ({display_name}).
 المجال: {category}
 ملاحظة عن المنتج: {product_note}
