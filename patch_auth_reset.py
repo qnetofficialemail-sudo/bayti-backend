@@ -1,4 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import os
+
+BACKEND = r"C:\Users\Dell\Desktop\homemarketplace\backend"
+auth_path = os.path.join(BACKEND, "routers", "auth.py")
+
+new_content = '''from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from core.database import get_db
@@ -142,3 +147,8 @@ def reset_password(data: dict, db: Session = Depends(get_db)):
     db.commit()
     del password_reset_tokens[token]
     return {"message": "Password reset successfully"}
+'''
+
+with open(auth_path, "w", encoding="utf-8") as f:
+    f.write(new_content)
+print("Done! Size:", len(new_content))
