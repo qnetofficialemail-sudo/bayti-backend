@@ -18,13 +18,11 @@ def is_seller_open(seller: SellerProfile) -> dict:
     if not seller.available_days and not seller.available_from:
         return {"is_open": True, "reason": "always_open", "message": ""}
 
-    # Check in UAE time (UTC+4)
     uae_tz = pytz.timezone("Asia/Dubai")
     now = datetime.now(uae_tz)
-    weekday = now.weekday()  # 0=Mon, 6=Sun
+    weekday = now.weekday()
     current_time = now.strftime("%H:%M")
 
-    # Check day
     if seller.available_days:
         allowed_days = [int(d.strip()) for d in seller.available_days.split(",") if d.strip()]
         if weekday not in allowed_days:
@@ -32,7 +30,6 @@ def is_seller_open(seller: SellerProfile) -> dict:
             allowed_names = [day_names[d] for d in sorted(allowed_days)]
             return {"is_open": False, "reason": "wrong_day", "message": f"Available: {', '.join(allowed_names)}"}
 
-    # Check time
     if seller.available_from and seller.available_until:
         if not (seller.available_from <= current_time <= seller.available_until):
             return {"is_open": False, "reason": "outside_hours",
@@ -60,7 +57,6 @@ def seller_status(seller_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{seller_id}/public")
 def get_seller_public(seller_id: int, db: Session = Depends(get_db)):
-    """Public seller profile - hides contact details."""
     seller = db.query(SellerProfile).filter(
         SellerProfile.id == seller_id,
         SellerProfile.is_approved == True
@@ -103,7 +99,7 @@ async def edit_seller_profile(
     whatsapp_number: Optional[str] = Form(None),
     instagram_handle: Optional[str] = Form(None),
     min_order_amount: Optional[float] = Form(None),
-    delivery_fees: Optional[str] = Form(None),  # JSON string
+    delivery_fees: Optional[str] = Form(None),
     logo: Optional[UploadFile] = File(None),
     sample_image_1: Optional[UploadFile] = File(None),
     sample_image_2: Optional[UploadFile] = File(None),
@@ -117,19 +113,17 @@ async def edit_seller_profile(
     if shop_name is not None: seller.shop_name = shop_name
     if description is not None:
         seller.description = description
-        # Auto-translate description to Arabic if not provided
         if not description_ar:
             try:
                 import os, requests as _req
                 api_key = os.getenv("ANTHROPIC_API_KEY")
                 if api_key:
+                    translate_prompt = "Translate this UAE shop description to Arabic. Return ONLY the translation:\n\n" + description
                     resp = _req.post(
                         "https://api.anthropic.com/v1/messages",
                         headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
                         json={"model": "claude-haiku-4-5-20251001", "max_tokens": 300,
-                              "messages": [{"role": "user", "content": f"Translate this UAE shop description to Arabic. Return ONLY the translation:
-
-{description}"}]},
+                              "messages": [{"role": "user", "content": translate_prompt}]},
                         timeout=15,
                     )
                     seller.description_ar = resp.json().get("content", [{}])[0].get("text", "").strip()
@@ -163,15 +157,12 @@ def update_schedule(
     seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
     if not seller:
         raise HTTPException(status_code=404, detail="Seller profile not found")
-
-    # Use model_fields_set to detect explicitly passed fields (including null)
     fields = data.model_dump(exclude_unset=False)
     seller.available_days = fields.get("available_days")
     seller.available_from = fields.get("available_from")
     seller.available_until = fields.get("available_until")
     if data.accepting_orders is not None:
         seller.accepting_orders = data.accepting_orders
-
     db.commit()
     db.refresh(seller)
     return seller
@@ -206,7 +197,7 @@ async def create_seller_profile_form(
     whatsapp_number: Optional[str] = Form(None),
     instagram_handle: Optional[str] = Form(None),
     min_order_amount: Optional[float] = Form(None),
-    delivery_fees: Optional[str] = Form(None),  # JSON string
+    delivery_fees: Optional[str] = Form(None),
     delivery_type: Optional[str] = Form("bayti"),
     categories_offered: Optional[str] = Form(None),
     sample_image_1: Optional[UploadFile] = File(None),
@@ -215,12 +206,10 @@ async def create_seller_profile_form(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    """Form-based seller profile creation (used by SellerSetup page)."""
     existing = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
     if existing:
         raise HTTPException(status_code=400, detail="Seller profile already exists")
 
-    # Upload sample images to Cloudinary
     from services.cloudinary_upload import upload_seller_logo
     import uuid
 
