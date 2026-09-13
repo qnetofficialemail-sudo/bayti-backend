@@ -87,6 +87,8 @@ async def create_product(
     image_5: Optional[UploadFile] = File(None),
     primary_image_index: int = Form(0),
     track_stock: bool = Form(False),
+    discount_percent: float = Form(0),
+    free_shipping_min_amount: Optional[float] = Form(None),
     image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_seller)
@@ -121,13 +123,11 @@ async def create_product(
         return arabic_chars > len(text) * 0.3
 
     if is_arabic(name):
-        # Seller typed in Arabic — name field contains Arabic, translate to English
         name_ar = name
         name = auto_translate(name, "en") or name
         description_ar = description or ""
         description = auto_translate(description, "en") if description else description
     else:
-        # Seller typed in English — translate to Arabic
         name_ar = auto_translate(name, "ar") if name else ""
         description_ar = auto_translate(description, "ar") if description else ""
 
@@ -151,6 +151,8 @@ async def create_product(
         stock_quantity=stock_quantity if track_stock else -1,
         track_stock=1 if track_stock else 0,
         is_available=True,
+        discount_percent=discount_percent if discount_percent and discount_percent > 0 else 0,
+        free_shipping_min_amount=free_shipping_min_amount,
     )
     db.add(product)
     db.flush()
@@ -185,6 +187,8 @@ async def update_product(
     time_unit: Optional[str] = Form(None),
     stock_quantity: Optional[int] = Form(None),
     track_stock: Optional[bool] = Form(None),
+    discount_percent: Optional[float] = Form(None),
+    free_shipping_min_amount: Optional[float] = Form(None),
     primary_image_index: Optional[int] = Form(None),
     image: Optional[UploadFile] = File(None),
     image_2: Optional[UploadFile] = File(None),
@@ -199,7 +203,6 @@ async def update_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Detect language and auto-translate on update
     import unicodedata
     def is_arabic_text(text):
         if not text: return False
@@ -227,8 +230,10 @@ async def update_product(
     if preparation_time is not None: product.preparation_time = preparation_time
     if track_stock is not None: product.track_stock = 1 if track_stock else 0
     if stock_quantity is not None: product.stock_quantity = stock_quantity
+    if discount_percent is not None: product.discount_percent = discount_percent
+    if free_shipping_min_amount is not None:
+        product.free_shipping_min_amount = free_shipping_min_amount if free_shipping_min_amount > 0 else None
 
-    # Auto-disable if stock tracking on and quantity is 0
     if product.track_stock and product.stock_quantity == 0:
         product.is_available = False
 
@@ -258,7 +263,6 @@ def restock_product(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_seller)
 ):
-    """Quick restock endpoint — add quantity to current stock."""
     seller = db.query(SellerProfile).filter(SellerProfile.user_id == current_user.id).first()
     product = db.query(Product).filter(Product.id == product_id, Product.seller_id == seller.id).first()
     if not product:
@@ -283,7 +287,6 @@ def delete_product(product_id: int, db: Session = Depends(get_db), current_user=
     return {"message": "Product deleted"}
 
 
-# ── Product Variants ──
 @router.get("/{product_id}/variants")
 def get_product_variants(product_id: int, db: Session = Depends(get_db)):
     from models.user import ProductVariant
@@ -296,7 +299,7 @@ def add_product_variant(
     product_id: int,
     name: str = Form(...),
     name_ar: str = Form(""),
-    options: str = Form(...),  # JSON string
+    options: str = Form(...),
     is_required: bool = Form(True),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_seller)
@@ -379,7 +382,6 @@ def set_product_category(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user)
 ):
-    """Admin: set category_id on a product."""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
     product = db.query(Product).filter(Product.id == product_id).first()
