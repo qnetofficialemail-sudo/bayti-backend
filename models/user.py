@@ -54,13 +54,12 @@ class SellerProfile(Base):
     available_from = Column(String, nullable=True)
     available_until = Column(String, nullable=True)
     accepting_orders = Column(Boolean, default=True)
-    # New seller profile fields
     whatsapp_number = Column(String, nullable=True)
     instagram_handle = Column(String, nullable=True)
     min_order_amount = Column(Float, nullable=True)
-    delivery_type = Column(String, nullable=True)     # "self" or "bayti"
-    delivery_fees = Column(Text, nullable=True)       # JSON: {"Dubai":15,"Sharjah":20,...} null=not available
-    categories_offered = Column(String, nullable=True) # comma-separated category ids
+    delivery_type = Column(String, nullable=True)
+    delivery_fees = Column(Text, nullable=True)
+    categories_offered = Column(String, nullable=True)
     sample_image_1 = Column(String, nullable=True)
     sample_image_2 = Column(String, nullable=True)
     sample_image_3 = Column(String, nullable=True)
@@ -88,7 +87,7 @@ class Product(Base):
     name_ar = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     description_ar = Column(Text, nullable=True)
-    specs = Column(Text, nullable=True)  # JSON string of category-specific specs
+    specs = Column(Text, nullable=True)
     price = Column(Float, nullable=False)
     image_url = Column(String, nullable=True)
     image_2 = Column(String, nullable=True)
@@ -98,10 +97,12 @@ class Product(Base):
     primary_image_index = Column(Integer, default=0)
     is_available = Column(Boolean, default=True)
     preparation_time = Column(Integer, default=60)
-    time_unit = Column(String, default="minutes")  # minutes, hours, days
+    time_unit = Column(String, default="minutes")
     stock_quantity = Column(Integer, default=-1)
     track_stock = Column(Integer, default=0)
     is_featured = Column(Boolean, default=False)
+    discount_percent = Column(Float, default=0)
+    free_shipping_min_amount = Column(Float, nullable=True)
     sold_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     seller = relationship("SellerProfile", back_populates="products")
@@ -136,9 +137,9 @@ class Review(Base):
     order_id = Column(Integer, ForeignKey("orders.id"), unique=True)
     buyer_id = Column(Integer, ForeignKey("users.id"))
     seller_id = Column(Integer, ForeignKey("seller_profiles.id"))
-    rating = Column(Integer, nullable=False)  # 1-5
+    rating = Column(Integer, nullable=False)
     comment = Column(Text, nullable=True)
-    is_approved = Column(Boolean, default=False)  # admin must approve
+    is_approved = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     buyer = relationship("User", foreign_keys=[buyer_id])
     seller = relationship("SellerProfile", foreign_keys=[seller_id])
@@ -151,7 +152,7 @@ class OrderItem(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Float, nullable=False)
-    selected_variants = Column(Text, nullable=True)  # JSON: {"Size":"M","Color":"Black"}
+    selected_variants = Column(Text, nullable=True)
     order = relationship("Order", back_populates="items")
     product = relationship("Product", back_populates="order_items")
 
@@ -168,7 +169,7 @@ class SellerApplication(Base):
     doc_1_url = Column(Text, nullable=True)
     doc_2_url = Column(Text, nullable=True)
     doc_3_url = Column(Text, nullable=True)
-    status = Column(String, default="pending")  # pending, approved, rejected
+    status = Column(String, default="pending")
     invite_token = Column(String, nullable=True, unique=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -178,9 +179,9 @@ class ProductVariant(Base):
     __tablename__ = "product_variants"
     id = Column(Integer, primary_key=True, index=True)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
-    name = Column(String, nullable=False)        # e.g. "Size", "Color", "Scent"
-    name_ar = Column(String, nullable=True)      # Arabic name
-    options = Column(Text, nullable=False)       # JSON: [{"label":"S","price_adj":0},{"label":"M","price_adj":5}]
+    name = Column(String, nullable=False)
+    name_ar = Column(String, nullable=True)
+    options = Column(Text, nullable=False)
     is_required = Column(Boolean, default=True)
     product = relationship("Product", back_populates="variants")
 
@@ -189,5 +190,5 @@ class PushSubscription(Base):
     __tablename__ = "push_subscriptions"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    subscription_json = Column(Text, nullable=False)  # JSON string from browser
+    subscription_json = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
