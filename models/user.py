@@ -39,6 +39,7 @@ class SellerProfile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
     shop_name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
+    description_ar = Column(Text, nullable=True)
     area = Column(String, nullable=False)
     city = Column(String, default="Dubai")
     logo_url = Column(String, nullable=True)

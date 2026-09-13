@@ -71,6 +71,7 @@ def get_seller_public(seller_id: int, db: Session = Depends(get_db)):
         "id": seller.id,
         "shop_name": seller.shop_name,
         "description": seller.description,
+        "description_ar": getattr(seller, "description_ar", None),
         "area": seller.area,
         "city": seller.city,
         "logo_url": seller.logo_url,
@@ -96,12 +97,14 @@ def get_seller_public(seller_id: int, db: Session = Depends(get_db)):
 async def edit_seller_profile(
     shop_name: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    description_ar: Optional[str] = Form(None),
     area: Optional[str] = Form(None),
     city: Optional[str] = Form(None),
     whatsapp_number: Optional[str] = Form(None),
     instagram_handle: Optional[str] = Form(None),
     min_order_amount: Optional[float] = Form(None),
     delivery_fees: Optional[str] = Form(None),  # JSON string
+    logo: Optional[UploadFile] = File(None),
     sample_image_1: Optional[UploadFile] = File(None),
     sample_image_2: Optional[UploadFile] = File(None),
     sample_image_3: Optional[UploadFile] = File(None),
@@ -112,7 +115,26 @@ async def edit_seller_profile(
     if not seller:
         raise HTTPException(status_code=404, detail="Seller profile not found")
     if shop_name is not None: seller.shop_name = shop_name
-    if description is not None: seller.description = description
+    if description is not None:
+        seller.description = description
+        # Auto-translate description to Arabic if not provided
+        if not description_ar:
+            try:
+                import os, requests as _req
+                api_key = os.getenv("ANTHROPIC_API_KEY")
+                if api_key:
+                    resp = _req.post(
+                        "https://api.anthropic.com/v1/messages",
+                        headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                        json={"model": "claude-haiku-4-5-20251001", "max_tokens": 300,
+                              "messages": [{"role": "user", "content": f"Translate this UAE shop description to Arabic. Return ONLY the translation:
+
+{description}"}]},
+                        timeout=15,
+                    )
+                    seller.description_ar = resp.json().get("content", [{}])[0].get("text", "").strip()
+            except: pass
+    if description_ar is not None: seller.description_ar = description_ar
     if area is not None: seller.area = area
     if city is not None: seller.city = city
     if whatsapp_number is not None: seller.whatsapp_number = whatsapp_number
@@ -120,6 +142,9 @@ async def edit_seller_profile(
     if min_order_amount is not None: seller.min_order_amount = min_order_amount
     if delivery_fees is not None: seller.delivery_fees = delivery_fees
     from services.cloudinary_upload import upload_seller_logo as _usl
+    if logo and logo.filename:
+        fb = await logo.read()
+        seller.logo_url = _usl(fb, logo.filename)
     for i, img in enumerate([sample_image_1, sample_image_2, sample_image_3], 1):
         if img and img.filename:
             fb = await img.read()
