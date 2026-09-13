@@ -131,6 +131,8 @@ class ProductOut(BaseModel):
     preparation_time: int
     stock_quantity: int = -1
     track_stock: int = 0
+    discount_percent: float = 0
+    free_shipping_min_amount: Optional[float] = None
     is_featured: bool = False
     sold_count: int = 0
     created_at: Optional[datetime] = None
