@@ -152,11 +152,17 @@ def generate_message(data: dict, db: Session = Depends(get_db), current_user = D
         "objection": f"رد على اعتراض: '{objection}' — إجابة صادقة وواضحة بدون وعود مبالغ فيها.",
     }
 
-    client = anthropic.Anthropic(api_key=api_key)
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=600,
-        system="""أنت مسؤول التواصل في فريق بيتي — منصة محلية في الإمارات تجمع البائعين والمشترين.
+    # كشف لغة الحساب من display_name + product_note
+    import re as _re
+    text_sample = f"{display_name} {product_note} {username}"
+    arabic_chars = len(_re.findall(r"[؀-ۿ]", text_sample))
+    english_chars = len(_re.findall(r"[a-zA-Z]", text_sample))
+    total_chars = arabic_chars + english_chars
+    arabic_ratio = arabic_chars / total_chars if total_chars > 0 else 0
+    account_lang = "ar" if arabic_ratio >= 0.15 else "en"
+
+    # system prompt حسب اللغة
+    system_ar = """أنت مسؤول التواصل في فريق بيتي — منصة محلية في الإمارات تجمع البائعين والمشترين.
 اكتب بالعربية الفصحى دائماً، لا عامية إطلاقاً. الأسلوب: دافئ، احترافي، إنساني، مباشر.
 لا تبالغ في المديح. لا تعد بمبيعات مضمونة. الجمل قصيرة ومحددة.
 
@@ -170,12 +176,51 @@ def generate_message(data: dict, db: Session = Depends(get_db), current_user = D
 - اطلب الإذن بالتواصل في الرسالة الأولى، لا ترسل كل التفاصيل دفعة واحدة
 
 مميزات بيتي: ذكاء اصطناعي يكتب وصف المنتج، استوديو ذكي يولّد صور تسويقية مجاناً، وصول لجمهور واسع في الإمارات، مجاني تماماً في المرحلة التجريبية، أول 10 بائعين يحصلون على صفحة مميزة مجاناً، إمكانية إضافة خصم % على أي منتج مع عرض السعر الأصلي مشطوباً، خاصية التوصيل المجاني التلقائي عند بلوغ حد معين في الطلب، رفع متعدد ذكي: ترفع حتى 20 صورة دفعة واحدة وتجمّعها حسب المنتج والذكاء الاصطناعي يكتب الاسم والوصف تلقائياً لكل منتج.
-رابط التسجيل: bayti.ink/sell""",
-        messages=[{"role": "user", "content": f"""اكتب رسالة إنستقرام للحساب @{username} ({display_name}).
+رابط التسجيل: bayti.ink/sell"""
+
+    system_en = """You are the outreach manager at Bayti — a local UAE marketplace connecting sellers and buyers.
+Write in clear, warm, professional English. Style: direct, human, encouraging.
+Rules:
+- Never say "Emirati marketplace" — say "local UAE marketplace"
+- Don't describe the audience by nationality — say "wide audience across the UAE" or "UAE customers"
+- Sellers are diverse: handmade, home cooks, importers, resellers — don't limit to one type
+- No emoji at start or end of message
+- Max 2 emoji inside the message
+- Ask permission in first message, don't send all details at once
+
+Bayti features: AI writes product descriptions, smart studio generates marketing photos free,
+AI pricing advisor, easy dashboard, wide UAE audience, free during beta,
+smart bulk upload (20 photos at once, AI writes name & description),
+discount % feature, free shipping threshold feature.
+Registration link: bayti.ink/sell"""
+
+    system = system_ar if account_lang == "ar" else system_en
+
+    if account_lang == "ar":
+        user_content = f"""اكتب رسالة إنستقرام للحساب @{username} ({display_name}).
 المجال: {category}
 ملاحظة عن المنتج: {product_note}
 نوع الرسالة: {type_instructions.get(msg_type, type_instructions["first"])}
-اكتب الرسالة فقط بدون أي مقدمة أو شرح."""}]
+اكتب الرسالة فقط بدون أي مقدمة أو شرح."""
+    else:
+        type_instructions_en = {
+            "first":     f"First outreach message — mention a specific product from their account, offer early access as one of first 10 sellers, mention Bayti Smart Studio as a free gift, and mention that the platform supports both Arabic and English to reach a wider UAE audience. Ask only for permission to send details.",
+            "followup1": "Friendly first follow-up after 3-4 days — brief and warm, no pressure, remind of previous message, confirm no obligation.",
+            "followup2": "Final follow-up — very respectful, mention it's the last message, leave door open for the future.",
+            "objection": f"Reply to objection: '{objection}' — honest and clear response without exaggerated promises.",
+        }
+        user_content = f"""Write an Instagram message for account @{username} ({display_name}).
+Category: {category}
+Product note: {product_note}
+Message type: {type_instructions_en.get(msg_type, type_instructions_en["first"])}
+Write the message only, no intro or explanation."""
+
+    client = anthropic.Anthropic(api_key=api_key)
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=600,
+        system=system,
+        messages=[{"role": "user", "content": user_content}]
     )
     message = response.content[0].text.strip()
     acc = db.query(OutreachAccount).filter(OutreachAccount.username == username).first()
