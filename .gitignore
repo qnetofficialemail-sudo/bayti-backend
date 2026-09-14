@@ -20,3 +20,9 @@ redesign_*.py
 rewrite_*.py
 product_*.py
 waitlist_*.py
+
+# Temp patch scripts
+patch_*.py
+*_patched.py
+*_fixed.py
+fix_*.py
