@@ -6,40 +6,225 @@ import os, base64, anthropic
 
 router = APIRouter(prefix="/api/studio", tags=["studio"])
 
-MODEL_LABELS = {
+# ── فئات المنتجات ──────────────────────────────────────────────────────────────
+PRODUCT_CATEGORIES = {
+    # ملابس وإكسسوارات
+    "apparel":   {"label": "ملابس وعبايات",   "group": "fashion"},
+    "bag":       {"label": "حقائب",            "group": "fashion"},
+    "jewelry":   {"label": "مجوهرات",          "group": "fashion"},
+    "glasses":   {"label": "نظارات",           "group": "fashion"},
+    "watch":     {"label": "ساعات",            "group": "fashion"},
+    "shoes":     {"label": "أحذية",            "group": "fashion"},
+    # منزل وديكور
+    "candle":    {"label": "شموع وعطور",       "group": "home"},
+    "decor":     {"label": "ديكور منزلي",      "group": "home"},
+    "plants":    {"label": "نباتات وأصص",      "group": "home"},
+    # طعام وحلويات
+    "food":      {"label": "طعام وأكلات",      "group": "food"},
+    "sweets":    {"label": "حلويات وكيك",      "group": "food"},
+    "drinks":    {"label": "مشروبات وعصائر",   "group": "food"},
+    # جمال وعناية
+    "skincare":  {"label": "عناية بالبشرة",    "group": "beauty"},
+    "makeup":    {"label": "مكياج",            "group": "beauty"},
+    "haircare":  {"label": "عناية بالشعر",     "group": "beauty"},
+    # يدوي وفن
+    "handcraft": {"label": "أعمال يدوية وفن",  "group": "craft"},
+}
+
+# ── خيارات الملابس ──────────────────────────────────────────────────────────────
+FASHION_MODEL_STYLES = {
     "female_gulf_modern": "a fictional adult female model wearing hijab, modest modern Gulf fashion style",
-    "female_modern":      "a fictional adult female model, modern casual style",
-    "neutral_studio":     "clean studio product display without a model",
+    "female_modern":      "a fictional adult female model, modern casual contemporary style",
+    "female_elegant":     "a fictional adult female model, elegant formal style",
+    "neutral_studio":     "clean studio product display without a model, on a mannequin or flat lay",
+    "ghost_mannequin":    "invisible ghost mannequin effect showing garment structure clearly",
 }
-BG_LABELS = {
-    "white_studio": "pure white studio background with soft even lighting",
-    "warm_beige":   "warm beige studio background with soft natural lighting",
-    "cafe":         "blurred modern cafe interior background",
-    "street":       "blurred modern city street at golden hour",
-    "interior":     "blurred elegant home interior",
+FASHION_POSES = {
+    "standing_neutral":  "standing in a natural confident neutral pose, hands relaxed",
+    "walking":           "walking dynamically toward the camera, natural movement",
+    "sitting_elegant":   "sitting elegantly on a minimal stool or chair",
+    "looking_side":      "looking slightly to the side in a candid lifestyle pose",
+    "hand_on_hip":       "one hand on hip, confident editorial stance",
+    "twirling":          "mid-twirl showing fabric movement and flow",
 }
-FRAMING_LABELS = {
-    "full_body":  "full body shot",
-    "half_body":  "half body shot from waist up",
-    "close_up":   "close-up shot focusing on product detail",
+FASHION_SIZES = {
+    "slim":    "slim/petite build",
+    "regular": "regular/average build",
+    "curvy":   "curvy/plus-size full-figured build",
 }
-FORMAT_LABELS = {
-    "product_square":  "1:1 square format",
-    "story_vertical":  "9:16 vertical story format",
+FASHION_BACKGROUNDS = {
+    "white_studio":  "pure white seamless studio background, professional clean",
+    "warm_beige":    "warm beige textured studio background, soft shadows",
+    "cream_minimal": "minimal cream off-white background, luxurious feel",
+    "cafe":          "blurred modern upscale cafe interior background",
+    "street":        "blurred modern Dubai city street at golden hour",
+    "garden":        "blurred lush garden with soft dappled sunlight",
+    "interior":      "blurred elegant contemporary home interior",
+    "desert":        "blurred golden UAE desert dunes at sunset",
 }
+
+# ── خيارات المنزل والديكور ──────────────────────────────────────────────────────
+HOME_SHOT_STYLES = {
+    "flat_lay_overhead":  "perfectly styled flat lay, shot directly from above (bird's eye view)",
+    "45_angle":           "shot from a 45-degree angle, classic product photography perspective",
+    "lifestyle_scene":    "lifestyle scene styled in a real home setting (shelf, table, windowsill)",
+    "close_up_macro":     "extreme close-up macro shot emphasizing texture and material details",
+    "hero_shot":          "dramatic hero product shot centered on a pedestal with spotlight",
+    "grouped_collection": "group of 3-5 similar products arranged in an aesthetically pleasing composition",
+}
+HOME_SURFACES = {
+    "linen_cream":    "warm cream linen fabric surface, soft and textured",
+    "marble_white":   "white Italian marble surface with natural veining",
+    "dark_wood":      "rich dark walnut wood surface with natural grain",
+    "light_oak":      "light oak wooden surface, Scandinavian minimal feel",
+    "concrete_gray":  "cool concrete gray surface, industrial modern aesthetic",
+    "travertine":     "warm travertine stone surface, Mediterranean luxury feel",
+    "rattan_natural": "natural rattan or wicker surface, tropical bohemian",
+}
+HOME_MOODS = {
+    "warm_cozy":      "warm cozy atmosphere with soft candlelight glow and amber tones",
+    "clean_minimal":  "clean minimal Scandinavian aesthetic, white and natural tones",
+    "luxury_dark":    "moody luxury dark atmosphere, deep jewel tones and dramatic shadows",
+    "botanical":      "botanical lush green vibe with dried flowers and eucalyptus",
+    "arabic_heritage":"warm Arabic heritage aesthetic with brass accents and geometric patterns",
+    "modern_chic":    "modern chic contemporary styling with metallic accents",
+}
+HOME_PROPS = {
+    "none":            "no additional props, product only",
+    "botanicals":      "surrounded by dried pampas grass, eucalyptus, and pressed flowers",
+    "candles_ambient": "complemented by lit tea light candles creating warm ambient glow",
+    "citrus_fresh":    "styled with fresh cut citrus fruits (lemon, orange) for freshness",
+    "coffee_book":     "styled with a book, reading glasses, and a cup of coffee",
+    "petals_romantic": "scattered fresh and dried rose petals and small buds",
+    "seasonal_eid":    "Eid/Ramadan decor elements: small lantern, dates, crescent accent",
+    "herbs_natural":   "fresh herbs like rosemary, lavender, mint for a natural organic feel",
+}
+
+# ── خيارات الطعام ──────────────────────────────────────────────────────────────
+FOOD_SHOT_STYLES = {
+    "overhead_flat":    "overhead flat lay shot, perfect for showcasing the full dish",
+    "45_editorial":     "45-degree editorial food photography angle",
+    "close_up_steam":   "close-up shot capturing steam, texture, and freshness",
+    "plated_hero":      "elegant hero plating shot on a beautiful ceramic plate",
+    "rustic_spread":    "rustic abundant spread with multiple dishes on a wooden table",
+    "single_hero":      "single product hero shot with perfect lighting and garnish",
+}
+FOOD_SURFACES = {
+    "white_marble":    "clean white marble surface with subtle veining",
+    "dark_slate":      "dark slate or black marble surface for contrast",
+    "rustic_wood":     "rustic aged wooden table surface",
+    "ceramic_plate":   "beautiful artisan ceramic plate or tray",
+    "linen_napkin":    "cream linen napkin or tablecloth surface",
+    "golden_tray":     "elegant gold serving tray",
+}
+FOOD_MOODS = {
+    "fresh_bright":    "bright airy fresh mood with natural daylight streaming in",
+    "warm_homemade":   "warm cozy homemade feel with soft golden kitchen light",
+    "luxury_fine":     "fine dining luxury presentation with dramatic side lighting",
+    "festive_eid":     "festive Eid/Ramadan celebration mood with lantern elements",
+    "cafe_modern":     "modern cafe aesthetic with a cup of Arabic coffee beside",
+}
+FOOD_GARNISH = {
+    "none":            "no additional garnish",
+    "herbs_fresh":     "garnished with fresh mint, parsley, or basil leaves",
+    "nuts_honey":      "topped with roasted nuts, a drizzle of honey, and powdered sugar",
+    "flowers_edible":  "decorated with edible flowers and microgreens",
+    "sauce_drizzle":   "with a beautiful artistic sauce drizzle on the plate",
+    "powdered_sugar":  "dusted with delicate powdered sugar for an elegant finish",
+}
+
+# ── خيارات الجمال ──────────────────────────────────────────────────────────────
+BEAUTY_SHOT_STYLES = {
+    "flat_lay_clean":   "clean flat lay on a pristine white or marble background",
+    "hero_product":     "single hero product shot with dramatic side lighting",
+    "lifestyle_vanity": "lifestyle shot styled on a beautiful vanity or dressing table",
+    "grouped_routine":  "skincare routine flatlay with complementary products",
+    "macro_texture":    "extreme macro close-up showing product texture and consistency",
+    "open_product":     "product partially open showing texture, cream, or color inside",
+}
+BEAUTY_BACKGROUNDS = {
+    "white_clean":      "pristine white background, clinical clean luxury",
+    "marble_pink":      "soft pink marble surface, feminine luxury aesthetic",
+    "cream_linen":      "cream linen fabric, organic natural skincare vibe",
+    "dark_luxury":      "deep charcoal or black velvet background, prestige luxury",
+    "botanical_green":  "soft botanical green background with plant elements",
+    "glass_reflective": "glass reflective surface with subtle caustic light patterns",
+}
+BEAUTY_PROPS = {
+    "none":             "minimal — product only",
+    "flowers_pink":     "surrounded by delicate pink and white flower petals",
+    "crystals":         "complemented by rose quartz crystals and pearl beads",
+    "herbs_botanical":  "styled with fresh botanical elements: lavender, rosehip, chamomile",
+    "gold_accents":     "accented with small gold rings, gold leaf, and luxury touches",
+    "mirror_elegant":   "reflected in an elegant hand mirror with gold frame",
+    "water_splash":     "with a fresh water splash effect suggesting purity and hydration",
+}
+
+# ── خيارات الأعمال اليدوية ──────────────────────────────────────────────────────
+CRAFT_SHOT_STYLES = {
+    "flat_lay":         "artful flat lay arrangement showing the piece at its best",
+    "hands_wearing":    "being worn or held by elegant hands with subtle lighting",
+    "display_stand":    "displayed on a beautiful jewelry stand or art display",
+    "atelier_scene":    "styled in a creative atelier/workshop scene with tools",
+    "gift_presentation":"beautifully gift-wrapped or in a luxury gift box",
+    "collection_spread":"spread with a collection of related pieces",
+}
+
+# ── مشتركة ──────────────────────────────────────────────────────────────────────
+LIGHTING_OPTIONS = {
+    "soft_natural":    "soft diffused natural daylight from a large window",
+    "golden_hour":     "warm golden hour sunlight, long shadows, rich amber tones",
+    "studio_bright":   "bright professional studio strobe lighting, even and shadowless",
+    "moody_dramatic":  "moody dramatic low-key side lighting, deep shadows",
+    "ring_light":      "soft ring light creating a glamorous catchlight",
+    "backlit_rim":     "beautiful backlit rim lighting creating a halo effect",
+    "candlelight":     "warm intimate candlelight, flickering amber glow",
+}
+SEASON_OPTIONS = {
+    "none":    "",
+    "summer":  "summer vibes: bright, airy, fresh, light and breezy atmosphere",
+    "winter":  "winter cozy atmosphere: warm blankets, hot drinks, intimate warmth",
+    "ramadan": "Ramadan elegant festive mood: crescent moon, lanterns, warm amber light",
+    "eid":     "Eid celebration: joyful, festive, luxurious, celebratory colors",
+    "national":"UAE National Day: pride, heritage, warm UAE flag color accents",
+}
+OUTPUT_FORMATS = {
+    "product_square":  "1:1 square format, perfect for Instagram feed",
+    "story_vertical":  "9:16 vertical format, perfect for Instagram/TikTok stories",
+    "landscape_wide":  "16:9 wide landscape format, perfect for banners and covers",
+}
+
 
 @router.post("/analyze")
 async def analyze_product(
-    product_type:  str = Form(...),
-    model_style:   str = Form("female_gulf_modern"),
-    background:    str = Form("white_studio"),
-    framing:       str = Form("full_body"),
-    output_format: str = Form("product_square"),
-    model_size:    str = Form("regular"),
-    lighting:      str = Form("soft_natural"),
-    season:        str = Form("none"),
-    pose:          str = Form("standing_neutral"),
-    extra_notes:   str = Form(""),
+    # مشتركة
+    product_type:   str = Form(...),
+    output_format:  str = Form("product_square"),
+    lighting:       str = Form("soft_natural"),
+    season:         str = Form("none"),
+    extra_notes:    str = Form(""),
+    # ملابس
+    model_style:    str = Form("female_gulf_modern"),
+    model_size:     str = Form("regular"),
+    pose:           str = Form("standing_neutral"),
+    background:     str = Form("white_studio"),
+    # منزل/ديكور/شموع
+    home_shot_style: str = Form("flat_lay_overhead"),
+    home_surface:    str = Form("linen_cream"),
+    home_mood:       str = Form("warm_cozy"),
+    home_props:      str = Form("botanicals"),
+    # طعام
+    food_shot_style: str = Form("overhead_flat"),
+    food_surface:    str = Form("white_marble"),
+    food_mood:       str = Form("warm_homemade"),
+    food_garnish:    str = Form("none"),
+    # جمال
+    beauty_shot_style: str = Form("hero_product"),
+    beauty_background: str = Form("white_clean"),
+    beauty_props:      str = Form("none"),
+    # أعمال يدوية
+    craft_shot_style: str = Form("flat_lay"),
+    # الصورة
     image: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -48,7 +233,6 @@ async def analyze_product(
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
-    # Read image
     image_bytes = await image.read()
     if len(image_bytes) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="الصورة أكبر من 10MB")
@@ -58,99 +242,269 @@ async def analyze_product(
     image_b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
     mime = image.content_type or "image/jpeg"
 
-    model_desc   = MODEL_LABELS.get(model_style, MODEL_LABELS["female_gulf_modern"])
-    bg_desc      = BG_LABELS.get(background, BG_LABELS["white_studio"])
-    framing_desc = FRAMING_LABELS.get(framing, FRAMING_LABELS["full_body"])
-    format_desc  = FORMAT_LABELS.get(output_format, FORMAT_LABELS["product_square"])
+    # تحديد المجموعة
+    category_info = PRODUCT_CATEGORIES.get(product_type, {"label": "منتج", "group": "craft"})
+    group = category_info["group"]
 
-    size_map = {"slim": "slim build", "regular": "regular/average build", "curvy": "curvy/full-figured build"}
-    light_map = {"soft_natural": "soft natural daylight", "golden_hour": "warm golden hour sunset light", "studio_bright": "bright clean studio lighting", "moody_dark": "moody dramatic low-key lighting"}
-    pose_map = {"standing_neutral": "standing in a natural neutral pose", "walking": "walking dynamically toward the camera", "sitting_elegant": "sitting elegantly", "looking_side": "looking slightly to the side in a candid pose"}
-    season_map = {"none": "", "summer": "summer vibes, bright and airy", "winter": "winter cozy atmosphere", "ramadan": "Ramadan elegant festive mood, subtle lantern or crescent elements in background", "eid": "Eid celebration joyful elegant mood"}
+    # بناء وصف الخيارات حسب المجموعة
+    format_desc  = OUTPUT_FORMATS.get(output_format, OUTPUT_FORMATS["product_square"])
+    light_desc   = LIGHTING_OPTIONS.get(lighting, LIGHTING_OPTIONS["soft_natural"])
+    season_desc  = SEASON_OPTIONS.get(season, "")
+    extra_desc   = extra_notes.strip()
 
-    size_desc    = size_map.get(model_size, "regular/average build")
-    light_desc   = light_map.get(lighting, "soft natural daylight")
-    pose_desc    = pose_map.get(pose, "standing in a natural neutral pose")
-    season_desc  = season_map.get(season, "")
-    extra_desc   = extra_notes.strip() if extra_notes else ""
+    if group == "fashion":
+        model_desc  = FASHION_MODEL_STYLES.get(model_style, FASHION_MODEL_STYLES["female_gulf_modern"])
+        pose_desc   = FASHION_POSES.get(pose, FASHION_POSES["standing_neutral"])
+        size_desc   = FASHION_SIZES.get(model_size, FASHION_SIZES["regular"])
+        bg_desc     = FASHION_BACKGROUNDS.get(background, FASHION_BACKGROUNDS["white_studio"])
+        type_hints  = {
+            "apparel": "clothing/fashion item (abaya, dress, top, jacket, modest wear, etc.)",
+            "bag": "bag or handbag (leather, fabric, designer style)",
+            "jewelry": "jewelry piece (necklace, ring, bracelet, earrings, hair accessory)",
+            "glasses": "eyewear (sunglasses, prescription glasses, fashion frames)",
+            "watch": "watch or timepiece",
+            "shoes": "footwear (heels, flats, sneakers, sandals)",
+        }
+        type_hint = type_hints.get(product_type, "fashion product")
 
-    type_hints = {
-        "apparel":  "clothing item (abaya, dress, top, jacket, etc.)",
-        "bag":      "bag or handbag",
-        "jewelry":  "jewelry piece (necklace, ring, bracelet, earrings)",
-        "glasses":  "eyewear (sunglasses or prescription glasses)",
-        "watch":    "watch or timepiece",
-        "belt":     "belt or waist accessory",
-    }
-    type_hint = type_hints.get(product_type, "fashion product")
+        system_prompt = """You are an elite fashion photography prompt engineer for AI image generation.
+Analyze the product image precisely and generate a detailed, professional Gemini prompt.
+Preserve exact colors, fabric, pattern, and design details. Always write prompts in English."""
 
-    system_prompt = """You are a professional fashion photography prompt engineer specializing in AI image generation.
-Your job: analyze a product image and generate a perfect, detailed prompt for Gemini image generation.
-The prompt must preserve the product's exact color, design, fabric, and details.
-Always write prompts in English. Be specific and detailed. Focus on accuracy."""
+        user_prompt = f"""Analyze this {type_hint} carefully and generate a Gemini AI image generation prompt.
 
-    user_prompt = f"""Analyze this {type_hint} image carefully and generate a Gemini image generation prompt.
-
-The generated image should show:
-- Model: {model_desc}, {size_desc}
+Settings chosen by the seller:
+- Model: {model_desc}, {size_desc} build
 - Pose: {pose_desc}
 - Background: {bg_desc}
 - Lighting: {light_desc}
-- Shot: {framing_desc}, {format_desc}
-- Season/Mood: {season_desc if season_desc else "timeless, no specific season"}
-- Style: professional commercial fashion photography, editorial quality
+- Shot format: {format_desc}
+- Season/mood: {season_desc if season_desc else "timeless, seasonless"}
 - Special requests: {extra_desc if extra_desc else "none"}
 
-Extract from the image:
-1. The EXACT color(s) — be very specific (e.g. "jet black", "ivory white", "dusty rose")
-2. Fabric type if visible (silk, cotton, chiffon, velvet, etc.)
-3. Key design details (V-neck, tie front, wide sleeves, embroidery, buttons, etc.)
-4. Any patterns or textures
+From the image, extract:
+1. EXACT color(s) — be hyper-specific (e.g. "deep mauve purple", "warm ivory with champagne undertones")
+2. Fabric type (chiffon, silk, cotton, crepe, nida, linen, velvet, leather, etc.)
+3. Every design detail (collar type, sleeve style, length, cuts, embroidery, buttons, ties, panels, etc.)
+4. Any prints, patterns, or textures
 
-Then write ONE detailed prompt starting with "A hyper-realistic professional fashion photograph of" that:
-- States the exact color explicitly (e.g. "deep crimson red", not just "red")
-- Describes ALL visible design details from the image precisely
-- Includes the model description, pose, background, lighting, shot style
-- Specifies fabric feel: "soft fleece", "flowing chiffon", "structured cotton", etc.
-- Mentions camera technical details at the end: "Shot on Sony A7R V, 85mm f/1.4 lens, shallow depth of field, tack sharp focus on clothing"
-- Ends with: "Photorealistic, 8K resolution, professional fashion editorial. No text overlays, no watermarks, no extra logos beyond what is on the garment. AI-generated marketing visualization."
-
-Important for maximum accuracy:
-- If the garment has a graphic/print, describe it in exact detail so it is reproduced faithfully
-- Specify the exact shade of every color (use paint/pantone-style names)
-- Mention fabric weight if visible (heavyweight, lightweight, medium-weight)
-- Include styling details: tucked/untucked, layered, accessories worn
+Generate ONE perfect prompt starting with "A hyper-realistic professional fashion photograph of" that:
+- States EXACT color explicitly
+- Describes ALL design details precisely
+- Includes the full model, pose, background, lighting description
+- Specifies fabric drape and feel
+- Ends with: "Shot on Sony A7R V, 85mm f/1.4, shallow depth of field, tack-sharp focus on garment. Photorealistic 8K, editorial fashion photography. No text, no watermarks, no logos."
 
 Also provide:
-- A SHORT Arabic description of what the prompt will create (2 sentences max)
-- 3 tips in Arabic for best results with this specific product
+- arabic_description: 2-sentence Arabic description of the expected result
+- tips: 3 Arabic tips specific to this product type
+- detected_color, detected_fabric, detected_details
 
-Respond in this exact JSON format:
-{{
-  "prompt": "...",
-  "arabic_description": "...",
-  "tips": ["tip1", "tip2", "tip3"],
-  "detected_color": "...",
-  "detected_fabric": "...",
-  "detected_details": "..."
-}}"""
+JSON only:
+{{"prompt":"...","arabic_description":"...","tips":["...","...","..."],"detected_color":"...","detected_fabric":"...","detected_details":"..."}}"""
 
+    elif group == "home":
+        shot_desc    = HOME_SHOT_STYLES.get(home_shot_style, HOME_SHOT_STYLES["flat_lay_overhead"])
+        surface_desc = HOME_SURFACES.get(home_surface, HOME_SURFACES["linen_cream"])
+        mood_desc    = HOME_MOODS.get(home_mood, HOME_MOODS["warm_cozy"])
+        props_desc   = HOME_PROPS.get(home_props, HOME_PROPS["botanicals"])
+        type_hints = {
+            "candle": "candle, reed diffuser, or home fragrance product",
+            "decor":  "home decor piece (vase, frame, ornament, sculpture, cushion, etc.)",
+            "plants": "plant, succulent, or decorative pot/planter",
+        }
+        type_hint = type_hints.get(product_type, "home product")
+
+        system_prompt = """You are an expert interior and product photography prompt engineer specializing in home goods, candles, and decor for UAE market.
+Generate detailed Gemini image prompts that create stunning, marketplace-ready product photos. Always write in English."""
+
+        user_prompt = f"""Analyze this {type_hint} and generate a Gemini AI image generation prompt.
+
+Settings:
+- Shot style: {shot_desc}
+- Surface/base: {surface_desc}
+- Mood & atmosphere: {mood_desc}
+- Props & styling: {props_desc}
+- Lighting: {light_desc}
+- Format: {format_desc}
+- Season/occasion: {season_desc if season_desc else "timeless"}
+- Special requests: {extra_desc if extra_desc else "none"}
+
+From the image, extract:
+1. Product type, shape, and size
+2. Exact color(s) with specific shade names
+3. Material/finish (matte, glossy, frosted, ceramic, glass, wooden, etc.)
+4. Any labels, text, patterns on the product (describe but specify NO TEXT in final image)
+5. Key distinguishing features
+
+Generate ONE perfect product photography prompt starting with "A stunning professional product photograph of" that:
+- Describes the exact product appearance faithfully
+- Incorporates the chosen shot style, surface, mood, and props naturally
+- Creates a cohesive, beautiful scene
+- Specifies: "No text or writing anywhere in the image. No logos or labels visible."
+- Ends with: "Shot on Phase One IQ4, macro lens, perfect product focus, photorealistic 8K resolution, professional commercial product photography."
+
+Also provide:
+- arabic_description: 2 sentences in Arabic describing the expected beautiful result
+- tips: 3 Arabic photography tips for this specific product
+- detected_color, detected_fabric (material instead), detected_details
+
+JSON only:
+{{"prompt":"...","arabic_description":"...","tips":["...","...","..."],"detected_color":"...","detected_fabric":"...","detected_details":"..."}}"""
+
+    elif group == "food":
+        shot_desc    = FOOD_SHOT_STYLES.get(food_shot_style, FOOD_SHOT_STYLES["overhead_flat"])
+        surface_desc = FOOD_SURFACES.get(food_surface, FOOD_SURFACES["white_marble"])
+        mood_desc    = FOOD_MOODS.get(food_mood, FOOD_MOODS["warm_homemade"])
+        garnish_desc = FOOD_GARNISH.get(food_garnish, FOOD_GARNISH["none"])
+        type_hints = {
+            "food":   "homemade cooked dish or meal",
+            "sweets": "dessert, sweet, cake, or pastry",
+            "drinks": "beverage, juice, smoothie, or drink",
+        }
+        type_hint = type_hints.get(product_type, "food product")
+
+        system_prompt = """You are a world-class food photography prompt engineer. 
+Generate mouth-watering, professional food photography prompts for Gemini AI. 
+Make food look irresistible, fresh, and crave-worthy. Always write in English."""
+
+        user_prompt = f"""Analyze this {type_hint} and generate a Gemini AI image generation prompt.
+
+Settings:
+- Shot style: {shot_desc}
+- Surface/base: {surface_desc}
+- Mood & atmosphere: {mood_desc}
+- Garnish & finishing: {garnish_desc}
+- Lighting: {light_desc}
+- Format: {format_desc}
+- Occasion: {season_desc if season_desc else "everyday"}
+- Special requests: {extra_desc if extra_desc else "none"}
+
+From the image, extract:
+1. Food type and dish name
+2. Main colors and visual appearance
+3. Texture (glossy, matte, crispy, creamy, flaky, etc.)
+4. Ingredients visible or implied
+5. Plating/presentation style
+
+Generate ONE perfect food photography prompt starting with "A mouth-watering professional food photograph of" that:
+- Makes the food look irresistible and fresh
+- Incorporates the shot style, surface, mood naturally
+- Adds life to the image: steam wisps, glistening sauce, fresh herbs
+- Ensures the food is the clear hero of the image
+- Ends with: "Shot on Canon R5, 100mm macro lens, perfect focus, photorealistic 8K, professional commercial food photography. No text overlays."
+
+Also provide:
+- arabic_description: 2 sentences in Arabic describing the expected stunning food photo
+- tips: 3 Arabic tips for photographing this specific food at home
+- detected_color, detected_fabric (texture instead), detected_details
+
+JSON only:
+{{"prompt":"...","arabic_description":"...","tips":["...","...","..."],"detected_color":"...","detected_fabric":"...","detected_details":"..."}}"""
+
+    elif group == "beauty":
+        shot_desc    = BEAUTY_SHOT_STYLES.get(beauty_shot_style, BEAUTY_SHOT_STYLES["hero_product"])
+        bg_desc      = BEAUTY_BACKGROUNDS.get(beauty_background, BEAUTY_BACKGROUNDS["white_clean"])
+        props_desc   = BEAUTY_PROPS.get(beauty_props, BEAUTY_PROPS["none"])
+        type_hints = {
+            "skincare": "skincare product (serum, moisturizer, oil, mask, cleanser, etc.)",
+            "makeup":   "makeup product (lipstick, eyeshadow, foundation, blush, etc.)",
+            "haircare": "hair care product (shampoo, conditioner, hair oil, mask, etc.)",
+        }
+        type_hint = type_hints.get(product_type, "beauty product")
+
+        system_prompt = """You are a luxury beauty product photography prompt engineer.
+Generate stunning, aspirational beauty photography prompts for Gemini AI that rival high-end cosmetics brands.
+Always write in English. Focus on elegance, clarity, and desire."""
+
+        user_prompt = f"""Analyze this {type_hint} and generate a Gemini AI image generation prompt.
+
+Settings:
+- Shot style: {shot_desc}
+- Background: {bg_desc}
+- Props & styling: {props_desc}
+- Lighting: {light_desc}
+- Format: {format_desc}
+- Occasion: {season_desc if season_desc else "timeless luxury"}
+- Special requests: {extra_desc if extra_desc else "none"}
+
+From the image, extract:
+1. Product type (bottle, tube, jar, compact, etc.) and exact shape
+2. Exact color of packaging and product
+3. Material/finish (glass, plastic, matte, metallic, frosted, etc.)
+4. Size and proportions
+5. Any visible text or branding (note: final image should have NO TEXT)
+
+Generate ONE perfect luxury beauty photography prompt starting with "A stunning high-end beauty product photograph of" that:
+- Conveys luxury, efficacy, and desirability
+- Incorporates shot style, background, props seamlessly
+- Plays with light reflections, glass caustics, or material sheen
+- Specifies: "No text, no labels, no product branding visible in the final image."
+- Ends with: "Shot on Hasselblad X2D, 120mm macro, perfect product focus, photorealistic 8K, luxury cosmetics campaign photography."
+
+Also provide:
+- arabic_description: 2 sentences in Arabic about the expected luxurious result
+- tips: 3 Arabic tips for photographing beauty products beautifully
+- detected_color, detected_fabric (material/finish instead), detected_details
+
+JSON only:
+{{"prompt":"...","arabic_description":"...","tips":["...","...","..."],"detected_color":"...","detected_fabric":"...","detected_details":"..."}}"""
+
+    else:  # craft
+        shot_desc = {
+            "flat_lay":          "artful overhead flat lay with beautiful composition",
+            "hands_wearing":     "worn or held by elegant feminine hands with soft lighting",
+            "display_stand":     "displayed on an elegant jewelry stand or art display pedestal",
+            "atelier_scene":     "styled in a creative atelier scene with artistic tools around",
+            "gift_presentation": "beautifully gift-wrapped or presented in a luxury gift box",
+            "collection_spread": "arranged as a curated collection spread",
+        }.get(craft_shot_style, "artful overhead flat lay")
+
+        system_prompt = """You are a creative artisan product photography prompt engineer.
+Generate evocative, artistic photography prompts for handmade and craft products for Gemini AI.
+Celebrate craftsmanship, uniqueness, and human artistry. Always write in English."""
+
+        user_prompt = f"""Analyze this handmade/artisan product and generate a Gemini AI image generation prompt.
+
+Settings:
+- Shot style: {shot_desc}
+- Lighting: {light_desc}
+- Format: {format_desc}
+- Season/occasion: {season_desc if season_desc else "timeless artisan"}
+- Special requests: {extra_desc if extra_desc else "none"}
+
+From the image, extract:
+1. Craft type (jewelry, macramé, pottery, painting, embroidery, etc.)
+2. Exact colors with specific shade names
+3. Materials (clay, thread, gold wire, fabric, wood, resin, etc.)
+4. Handmade textures and imperfections that show craftsmanship
+5. Unique design elements
+
+Generate ONE perfect artisan photography prompt starting with "A beautifully crafted artisan product photograph of" that:
+- Celebrates the handmade nature and uniqueness
+- Creates a warm, story-telling atmosphere
+- Shows texture and craftsmanship detail
+- Uses the chosen shot style naturally
+- Ends with: "Shot on Sony A7R V, 90mm macro, tack-sharp detail on craftsmanship, photorealistic 8K, fine artisan product photography. No text overlays."
+
+Also provide:
+- arabic_description: 2 sentences in Arabic about the expected artistic result
+- tips: 3 Arabic tips for photographing this handmade product
+- detected_color, detected_fabric (material instead), detected_details
+
+JSON only:
+{{"prompt":"...","arabic_description":"...","tips":["...","...","..."],"detected_color":"...","detected_fabric":"...","detected_details":"..."}}"""
+
+    # ── استدعاء Claude ──────────────────────────────────────────────────────────
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=1500,
+        max_tokens=2000,
         system=system_prompt,
         messages=[{
             "role": "user",
             "content": [
-                {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": mime,
-                        "data": image_b64,
-                    },
-                },
+                {"type": "image", "source": {"type": "base64", "media_type": mime, "data": image_b64}},
                 {"type": "text", "text": user_prompt}
             ],
         }]
@@ -158,7 +512,6 @@ Respond in this exact JSON format:
 
     import json
     text = response.content[0].text.strip()
-    # Clean JSON
     start = text.find("{")
     end = text.rfind("}") + 1
     if start >= 0 and end > start:
@@ -167,14 +520,13 @@ Respond in this exact JSON format:
         raise HTTPException(status_code=500, detail="Failed to parse AI response")
 
     return {
-        "prompt": parsed.get("prompt", ""),
+        "prompt":             parsed.get("prompt", ""),
         "arabic_description": parsed.get("arabic_description", ""),
-        "tips": parsed.get("tips", []),
-        "detected_color": parsed.get("detected_color", ""),
-        "detected_fabric": parsed.get("detected_fabric", ""),
-        "detected_details": parsed.get("detected_details", ""),
-        "gemini_url": "https://gemini.google.com",
-        "product_type": product_type,
-        "model_style": model_style,
-        "background": background,
+        "tips":               parsed.get("tips", []),
+        "detected_color":     parsed.get("detected_color", ""),
+        "detected_fabric":    parsed.get("detected_fabric", ""),
+        "detected_details":   parsed.get("detected_details", ""),
+        "gemini_url":         "https://gemini.google.com",
+        "product_type":       product_type,
+        "product_group":      group,
     }
