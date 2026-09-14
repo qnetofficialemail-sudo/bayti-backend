@@ -154,12 +154,12 @@ def generate_message(data: dict, db: Session = Depends(get_db), current_user = D
 
     # كشف لغة الحساب من display_name + product_note
     import re as _re
-    text_sample = f"{display_name} {product_note} {username}"
+    text_sample = f"{display_name} {username}"
     arabic_chars = len(_re.findall(r"[؀-ۿ]", text_sample))
     english_chars = len(_re.findall(r"[a-zA-Z]", text_sample))
     total_chars = arabic_chars + english_chars
     arabic_ratio = arabic_chars / total_chars if total_chars > 0 else 0
-    account_lang = "ar" if arabic_ratio >= 0.15 else "en"
+    account_lang = "ar" if arabic_ratio >= 0.30 else "en"
 
     # system prompt حسب اللغة
     system_ar = """أنت مسؤول التواصل في فريق بيتي — منصة محلية في الإمارات تجمع البائعين والمشترين.
