@@ -376,7 +376,10 @@ def generate_instagram_content(data: dict):
         except Exception:
             pass
 
-    HASHTAGS = "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #bayti"
+    HASHTAGS_AR = "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #bayti"
+    HASHTAGS_EN = "#bayti #UAEshopping #DubaiFinds #HomeBusiness #HandmadeUAE #UAEsellers #ShopLocalUAE #MadeInUAE #DubaiHandmade #WomenInBusiness"
+    lang = data.get("lang", "ar")
+    HASHTAGS = HASHTAGS_AR if lang == "ar" else HASHTAGS_EN
     return {
         "caption": parsed["caption"],
         "hashtags": HASHTAGS,
@@ -401,7 +404,10 @@ def generate_instagram_content_v2(data: dict):
     current_date = now.strftime("%B %d, %Y")
     current_month = now.strftime("%B")
 
-    HASHTAGS = "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #bayti"
+    HASHTAGS_AR = "#بيتي #بيع_من_البيت #بائعات_الإمارات #منتجات_محلية #bayti"
+    HASHTAGS_EN = "#bayti #UAEshopping #DubaiFinds #HomeBusiness #HandmadeUAE #UAEsellers #ShopLocalUAE #MadeInUAE #DubaiHandmade #WomenInBusiness"
+    lang = data.get("lang", "ar")
+    HASHTAGS = HASHTAGS_AR if lang == "ar" else HASHTAGS_EN
 
     # ── Type 1: Sellers ─────────────────────────────────────────────
     if content_type == "sellers":
@@ -429,7 +435,45 @@ def generate_instagram_content_v2(data: dict):
             "التوصيل المجاني من بيتي — كيف يزيد مبيعاتك تلقائياً",
             "الرفع المتعدد الذكي في بيتي — أضف 20 منتج في دقائق بدل ساعات",
         ]
-        topic = random.choice(topics)
+        # اختيار topics حسب اللغة
+        topics_en = [
+            "Inviting UAE-based sellers to join Bayti before official launch",
+            "Why selling on Bayti is smarter — AI writes your product listings",
+            "Bayti Smart Studio: turn your product photo into a professional marketing image — free",
+            "Bayti is not just for handmade — all sellers in the UAE are welcome",
+            "Do you import products and resell them? Bayti is your place",
+            "Get a professional product photo without a camera — with Bayti Studio",
+            "Beginner tip: how to photograph your product professionally",
+            "Poll: which category do you prefer? Candles, abayas, sweets, accessories?",
+            "Be one of the first — exclusive perks for early sellers",
+            "Bayti and sellers: a story we build together in the UAE",
+            "From home or warehouse to customer — how Bayti works",
+            "Why Bayti is better than selling on Instagram",
+            "Behind the scenes: how we built Bayti",
+            "How to price your product smartly",
+            "Common mistakes new sellers make",
+            "How to write an attractive product description",
+            "How to find your first customers in the UAE",
+            "Who can sell on Bayti? The answer will surprise you",
+            "The smart bulk upload on Bayti — add 20 products at once",
+        ]
+        topic = random.choice(topics_en if lang == "en" else topics)
+
+        system_en = """You are an Instagram content manager for Bayti — a UAE local marketplace connecting sellers and buyers.
+The platform is in beta. Write in clear, warm, professional English. Don't invent numbers.
+Sellers are diverse: handmade makers, home cooks, importers, resellers — all welcome.
+Don't limit content to one nationality. Write "sellers in the UAE" or "UAE residents".
+
+Bayti features you can mention:
+- AI writes product descriptions from photos automatically
+- Bayti Smart Studio: generates professional marketing photos free
+- AI Pricing Advisor
+- Easy dashboard to manage products and orders
+- Wide audience across the UAE
+- Free during beta
+- Smart bulk upload: upload up to 20 photos at once, AI writes name and description
+- Discount % feature: add discount on any product
+- Free shipping feature: set minimum order for free delivery"""
 
         system = """أنت مدير محتوى إنستقرام لمنصة بيتي — منصة محلية في الإمارات تجمع البائعين والمشترين.
 الموقع في مرحلة تجريبية. اكتب بالعربية الفصحى دائماً، لا عامية. لا تخترع أرقاماً.
@@ -452,17 +496,32 @@ def generate_instagram_content_v2(data: dict):
 - خاصية التوصيل المجاني: حدد مبلغ أدنى للطلب ويتحول التوصيل لمجاني تلقائياً
 - رفع متعدد ذكي: ارفع حتى 20 صورة دفعة واحدة، جمّعها حسب المنتج، والذكاء الاصطناعي يكتب الاسم والوصف تلقائياً لكل مجموعة"""
 
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1000,
-            system=system,
-            messages=[{"role": "user", "content": f"""أنشئ منشور إنستقرام عن: {topic}
+        if lang == "en":
+            user_msg_en = f"""Create an Instagram post about: {topic}
+
+Write the text directly without JSON, without extra headers.
+Start with a catchy strong sentence, relevant emojis, 150-200 words.
+End exactly with:
+🔗 Join now: bayti.ink/sell"""
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1000,
+                system=system_en,
+                messages=[{"role": "user", "content": user_msg_en}]
+            )
+        else:
+            user_msg_ar = f"""أنشئ منشور إنستقرام عن: {topic}
 
 اكتب النص مباشرة بدون JSON وبدون عناوين.
 يبدأ بجملة جذابة قوية، إيموجي مناسبة، ١٥٠-٢٠٠ كلمة.
 ينتهي بـ:
-🔗 سجّلي الآن: bayti.ink/sell"""}]
-        )
+🔗 سجّلي الآن: bayti.ink/sell"""
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=1000,
+                system=system,
+                messages=[{"role": "user", "content": user_msg_ar}]
+            )
 
         caption = response.content[0].text.strip()
         return {"caption": caption, "hashtags": HASHTAGS, "image_url": None, "type": content_type, "event": ""}
@@ -563,3 +622,65 @@ def generate_instagram_content_v2(data: dict):
         caption = response.content[0].text.strip()
         return {"caption": caption, "hashtags": HASHTAGS, "image_url": None, "type": content_type, "event": ""}
 
+
+
+class InviteRequest(BaseModel):
+    seller_name: str = ""
+    bio_text: str
+    lang: str = ""  # إذا فارغ يُكشف تلقائياً
+
+@router.post("/generate-invite")
+def generate_invite_message(data: InviteRequest):
+    """يولد رسالة دعوة ذكية حسب لغة صفحة البائع"""
+    import re as _re, os, requests as _requests
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+
+    # كشف اللغة تلقائياً إذا لم تُحدد
+    lang = data.lang
+    if not lang:
+        arabic = len(_re.findall(r"[\u0600-\u06FF]", data.bio_text))
+        english = len(_re.findall(r"[a-zA-Z]", data.bio_text))
+        total = arabic + english
+        arabic_ratio = arabic / total if total > 0 else 0
+        lang = "ar" if arabic_ratio >= 0.15 else "en"
+
+    if lang == "ar":
+        system = "أنت مسؤول علاقات بائعين في بيتي — منصة محلية في الإمارات. أسلوبك دافئ ومشجع. اكتب بالعربية الفصحى الخفيفة."
+        prompt = f"""اكتب رسالة دعوة قصيرة لبائع اسمه {data.seller_name or "البائع"} بناءً على وصف صفحته:
+{data.bio_text}
+
+الرسالة تشمل:
+- إطراء صادق على منتجاته
+- تعريف بيتي كمنصة محلية في الإمارات
+- ذكر أن المنصة تدعم العربية والإنجليزية للوصول لجمهور أوسع
+- الهدية المجانية (استوديو ذكي لأول ١٠ بائعين)
+- سؤال للإذن بإرسال التفاصيل
+اكتب مباشرة بدون عناوين."""
+    else:
+        system = "You are a seller relations manager at Bayti — a UAE home marketplace. Your tone is warm and encouraging."
+        prompt = f"""Write a short invitation message for a seller named {data.seller_name or "the seller"} based on their page description:
+{data.bio_text}
+
+The message should include:
+- A genuine compliment on their products
+- Introduce Bayti as a local UAE marketplace
+- Mention that the platform supports both Arabic and English — helping reach a wider UAE audience
+- The free gift (smart AI studio for the first 10 sellers)
+- Ask permission to send details
+Write directly without headers."""
+
+    try:
+        resp = _requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+            json={"model": "claude-sonnet-4-6", "max_tokens": 600, "system": system, "messages": [{"role": "user", "content": prompt}]},
+            timeout=30,
+        )
+        result = resp.json()
+        message = result.get("content", [{}])[0].get("text", "").strip()
+        return {"message": message, "lang": lang}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
