@@ -519,13 +519,15 @@ Don't limit content to one nationality. Write "sellers in the UAE" or "UAE resid
 Bayti features you can mention:
 - AI writes product descriptions from photos automatically
 - Bayti Smart Studio: generates professional marketing photos free
-- AI Pricing Advisor
+- Smart Pricing Advisor: scans real competitor prices across the UAE market and suggests the optimal price for each product — no guessing, no manual research
 - Easy dashboard to manage products and orders
 - Wide audience across the UAE
 - Free during beta
 - Smart bulk upload: upload up to 20 photos at once, AI writes name and description
 - Discount % feature: add discount on any product
-- Free shipping feature: set minimum order for free delivery"""
+- Free shipping feature: set minimum order for free delivery
+
+When mentioning the Smart Pricing Advisor, describe it as: a tool that analyzes live UAE market prices from real competitors and recommends the ideal price — never say "Claude" or "AI model", say "Smart Pricing Advisor" or "intelligent pricing tool"."""
 
         system = """أنت مدير محتوى إنستقرام لمنصة بيتي — منصة محلية في الإمارات تجمع البائعين والمشترين.
 الموقع في مرحلة تجريبية. اكتب بالعربية الفصحى دائماً، لا عامية. لا تخترع أرقاماً.
@@ -540,13 +542,15 @@ Bayti features you can mention:
 مميزات بيتي التي يمكنك ذكرها:
 - الذكاء الاصطناعي يكتب وصف المنتج تلقائياً من الصورة
 - استوديو بيتي الذكي: يولّد صوراً تسويقية احترافية مجاناً
-- مستشار التسعير الذكي
+- مستشار التسعير الذكي: يحلل أسعار المنافسين الفعليين في السوق الإماراتي ويقترح السعر الأمثل لكل منتج تلقائياً — بلا تخمين ولا مقارنة يدوية
 - لوحة تحكم سهلة لإدارة المنتجات والطلبات
 - وصول لجمهور واسع في الإمارات
 - بدون عمولة في المرحلة التجريبية
 - خاصية الخصم: أضف نسبة خصم % على أي منتج — يظهر السعر الأصلي مشطوباً وbadge أحمر للمشتري
 - خاصية التوصيل المجاني: حدد مبلغ أدنى للطلب ويتحول التوصيل لمجاني تلقائياً
-- رفع متعدد ذكي: ارفع حتى 20 صورة دفعة واحدة، جمّعها حسب المنتج، والذكاء الاصطناعي يكتب الاسم والوصف تلقائياً لكل مجموعة"""
+- رفع متعدد ذكي: ارفع حتى 20 صورة دفعة واحدة، جمّعها حسب المنتج، والذكاء الاصطناعي يكتب الاسم والوصف تلقائياً لكل مجموعة
+
+عند ذكر مستشار التسعير الذكي: صفه دائماً بأنه يحلل أسعار السوق الإماراتي الفعلية ويوصي بالسعر الأمثل — لا تقل "كلود" أو "نموذج ذكاء اصطناعي"، قل "مستشار التسعير الذكي" أو "أداة التسعير الذكية"."""
 
         if lang == "en":
             user_msg_en = f"""Create an Instagram post about: {topic}
@@ -703,6 +707,7 @@ def generate_invite_message(data: InviteRequest):
 - إطراء صادق على منتجاته
 - تعريف بيتي كمنصة محلية في الإمارات
 - ذكر أن المنصة تدعم العربية والإنجليزية للوصول لجمهور أوسع
+- ذكر مستشار التسعير الذكي بأسلوب جذاب: أداة تحلل أسعار السوق الإماراتي الفعلية وتوصي بالسعر الأمثل لكل منتج تلقائياً — لا تخمين ولا مقارنة يدوية (لا تقل "ذكاء اصطناعي" أو "كلود"، قل "مستشار التسعير الذكي")
 - الهدية المجانية (استوديو ذكي لأول ١٠ بائعين)
 - سؤال للإذن بإرسال التفاصيل
 اكتب مباشرة بدون عناوين."""
@@ -715,6 +720,7 @@ The message should include:
 - A genuine compliment on their products
 - Introduce Bayti as a local UAE marketplace
 - Mention that the platform supports both Arabic and English — helping reach a wider UAE audience
+- Mention the Smart Pricing Advisor naturally: a tool that scans real competitor prices across the UAE market and recommends the ideal price for each product automatically — no guessing, no manual research (never say "AI model" or "Claude", say "Smart Pricing Advisor" or "intelligent pricing tool")
 - The free gift (smart AI studio for the first 10 sellers)
 - Ask permission to send details
 Write directly without headers."""
