@@ -364,40 +364,63 @@ JSON only:
         }
         type_hint = type_hints.get(product_type, "food product")
 
-        system_prompt = """You are a world-class food photography prompt engineer. 
-Generate mouth-watering, professional food photography prompts for Gemini AI. 
-Make food look irresistible, fresh, and crave-worthy. Always write in English."""
+        system_prompt = """You are a world-class food photography prompt engineer specializing in Middle Eastern and homemade cuisine.
 
-        user_prompt = f"""Analyze this {type_hint} and generate a Gemini AI image generation prompt.
+YOUR MOST CRITICAL RULE: The food itself must be reproduced EXACTLY as it appears in the photo — same dish, same ingredients, same colors, same sauces, same toppings, same portions. You are NOT allowed to change, add, or remove any food component.
 
-Settings:
+What you CAN and SHOULD improve:
+- The serving plate/bowl (material, color, pattern, elegance)
+- The surface/table beneath (wood, marble, fabric, tray)
+- The surrounding atmosphere and decor props
+- The lighting quality and direction
+- The background scene and mood
+- Camera angle and framing
+
+What you must NEVER change:
+- The food itself
+- The sauce or broth covering the food
+- The toppings and garnishes already present
+- The color and texture of the ingredients
+- The quantity and arrangement of the food components
+
+Always write prompts in English."""
+
+        user_prompt = f"""Analyze this {type_hint} image very carefully and generate a Gemini AI image generation prompt.
+
+IMPORTANT: Your job is to PRESERVE the food exactly as-is and only enhance the surrounding environment.
+
+Settings chosen by the seller:
 - Shot style: {shot_desc}
 - Surface/base: {surface_desc}
 - Mood & atmosphere: {mood_desc}
-- Garnish & finishing: {garnish_desc}
+- Additional garnish: {garnish_desc}
 - Lighting: {light_desc}
 - Format: {format_desc}
-- Occasion: {season_desc if season_desc else "everyday"}
+- Occasion/season: {season_desc if season_desc else "everyday warm"}
 - Special requests: {extra_desc if extra_desc else "none"}
 
-From the image, extract:
-1. Food type and dish name
-2. Main colors and visual appearance
-3. Texture (glossy, matte, crispy, creamy, flaky, etc.)
-4. Ingredients visible or implied
-5. Plating/presentation style
+Step 1 — Extract EXACTLY from the image (preserve these in the prompt):
+1. Dish name and type
+2. EVERY sauce, broth, or liquid present (e.g. yogurt sauce, gravy, syrup — describe its color, consistency, and how it coats the food)
+3. EVERY topping visible (nuts, herbs, seeds, etc.) with exact colors
+4. Rice/bread/base color and texture exactly
+5. Meat/main ingredient appearance exactly
+6. Any existing garnish that must be kept
 
-Generate ONE perfect food photography prompt starting with "A mouth-watering professional food photograph of" that:
-- Makes the food look irresistible and fresh
-- Incorporates the shot style, surface, mood naturally
-- Adds life to the image: steam wisps, glistening sauce, fresh herbs
-- Ensures the food is the clear hero of the image
-- Ends with: "Shot on Canon R5, 100mm macro lens, perfect focus, photorealistic 8K, professional commercial food photography. No text overlays."
+Step 2 — Generate ONE perfect prompt starting with "A mouth-watering professional food photograph of" that:
+- Reproduces the food with 100% fidelity — SAME dish, SAME sauce, SAME toppings, SAME colors
+- Describes ALL sauces and liquids exactly as they appear (never omit them)
+- Places the food on the chosen serving surface: {surface_desc}
+- Sets the scene with the chosen mood: {mood_desc}
+- Applies the chosen lighting: {light_desc}
+- Only adds garnish if seller requested it AND it complements naturally
+- Adds life: rising steam wisps, light reflections on sauce, warm bokeh background
+- Ends with: "The food is reproduced with photographic accuracy — every sauce, topping, and color is identical to the original. Shot on Canon R5, 100mm macro lens, photorealistic 8K, professional commercial food photography. No text overlays."
 
 Also provide:
-- arabic_description: 2 sentences in Arabic describing the expected stunning food photo
-- tips: 3 Arabic tips for photographing this specific food at home
-- detected_color, detected_fabric (texture instead), detected_details
+- arabic_description: 2 sentences in Arabic describing that the food looks exactly as-is but in a more beautiful setting
+- tips: 3 Arabic tips for photographing this specific dish at home
+- detected_color, detected_fabric (texture/sauce description), detected_details (list every ingredient and sauce spotted)
 
 JSON only:
 {{"prompt":"...","arabic_description":"...","tips":["...","...","..."],"detected_color":"...","detected_fabric":"...","detected_details":"..."}}"""
