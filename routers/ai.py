@@ -70,110 +70,169 @@ class PricingRequest(BaseModel):
 
 @router.post("/pricing-advisor")
 def ai_pricing_advisor(data: PricingRequest):
-    """AI Pricing Advisor — data-driven pricing based on real market prices."""
+    """AI Pricing Advisor — real UAE market prices via web search."""
+    import json, statistics, re, anthropic
     from core.database import SessionLocal
-    from models.user import Product, Category
-    import statistics, json
+    from models.user import Product
 
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
-    # Search ALL products by keyword — category is irrelevant for pricing
+    # ── Step 1: بيانات بيتي الداخلية للمقارنة ─────────────────────
     db = SessionLocal()
     try:
         all_products = db.query(Product).filter(Product.price > 0).limit(500).all()
     finally:
         db.close()
 
-    # Keyword-based similarity — extract meaningful words (3+ chars)
-    import re
     def get_keywords(text):
         stop_words = {"من", "في", "على", "مع", "هذا", "هذه", "و", "the", "and", "with", "for", "of", "a", "an"}
-        import re as _re
-        words = _re.findall(r"[\w؀-ۿ]{3,}", text.lower())
-        stemmed = set()
+        words = re.findall(r"[\w\u0600-\u06FF]{3,}", text.lower())
+        result = set()
         for w in words:
             if w not in stop_words:
-                stemmed.add(w)
-                if w.endswith("s") and len(w) > 4:
-                    stemmed.add(w[:-1])
-                if w.endswith("es") and len(w) > 5:
-                    stemmed.add(w[:-2])
-        return stemmed
+                result.add(w)
+        return result
 
-    # Search using keywords from BOTH name and name_ar of query — language-agnostic
     query_keywords = get_keywords(data.product_name)
-
-    # Match against both AR and EN product names — collect matched product ids
     matched_ids = set()
     for p in all_products:
         product_keywords = get_keywords(p.name) | get_keywords(p.name_ar or "")
         if query_keywords & product_keywords:
             matched_ids.add(p.id)
-
-    # Also add all products from same category_id to the matched pool
-    # This ensures "candles" and "شموع" get the same range when same category selected
     if data.category_id:
         for p in all_products:
             if p.category_id == data.category_id:
                 matched_ids.add(p.id)
 
-    prices = [p.price for p in all_products if p.id in matched_ids]
+    bayti_prices = [p.price for p in all_products if p.id in matched_ids]
+    bayti_context = ""
+    if len(bayti_prices) >= 2:
+        bayti_context = f"Internal Bayti marketplace data: {len(bayti_prices)} similar products, range AED {int(min(bayti_prices))}–{int(max(bayti_prices))}, avg AED {int(statistics.mean(bayti_prices))}."
 
-    # Calculate range from real data
-    if len(prices) == 0:
-        # No similar products at all — truly unique
-        price_min = None
-        price_max = None
-        verdict = "unique"
-    elif len(prices) >= 3:
-        avg = statistics.mean(prices)
-        stdev = statistics.stdev(prices)
-        price_min = round(max(avg - stdev, min(prices)), 0)
-        price_max = round(min(avg + stdev, max(prices)), 0)
-        if data.price < price_min * 0.85:
-            verdict = "low"
-        elif data.price > price_max * 1.15:
-            verdict = "high"
-        else:
-            verdict = "good"
-    else:
-        # 1-2 similar products — use their range
-        price_min = round(min(prices) * 0.8, 0)
-        price_max = round(max(prices) * 1.2, 0)
-        if data.price < price_min * 0.85:
-            verdict = "low"
-        elif data.price > price_max * 1.15:
-            verdict = "high"
-        else:
-            verdict = "good"
+    # ── Step 2: Web Search للسوق الإماراتي ────────────────────────
+    client = anthropic.Anthropic(api_key=api_key)
 
-    # Ask AI only for a short suggestion text
-    try:
-        response = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "claude-haiku-4-5-20251001",
-                "max_tokens": 60,
-                "system": f"You are a UAE marketplace pricing advisor. Write ONE short sentence of practical advice (max 12 words). Always write in {'Arabic' if data.lang == 'ar' else 'English'}. Be warm and direct. No JSON, just the sentence.",
-                "messages": [{"role": "user", "content": f'Product: "{data.product_name}", Price: AED {data.price}, Market range: AED {price_min}-{price_max}, Verdict: {verdict}. Give one short tip.'}],
-            },
-            timeout=15,
+    WEB_SEARCH_TOOL = {"type": "web_search_20250305", "name": "web_search"}
+
+    system_prompt = f"""You are a UAE market pricing analyst. Your job:
+1. Search for real prices of the given product in UAE markets (noon.com, Instagram UAE sellers, Carrefour UAE, Amazon.ae, local UAE sellers).
+2. Analyze the prices found.
+3. Return a JSON object with your findings.
+
+Rules:
+- Search in English for better results (translate Arabic product names to English first)
+- Focus on UAE market prices only (AED currency)
+- Ignore prices from outside UAE
+- Be realistic — handmade/homemade products typically cost more than supermarket items
+- {bayti_context if bayti_context else "No internal marketplace data available yet."}
+- Language for advice text: {"Arabic (فصحى خفيفة)" if data.lang == "ar" else "English"}
+
+Return ONLY valid JSON (no markdown, no explanation):
+{{
+  "market_min": <lowest price found in AED, number>,
+  "market_max": <highest price found in AED, number>,
+  "market_avg": <average price in AED, number>,
+  "sources_found": ["source1", "source2"],
+  "verdict": "low" or "good" or "high" or "unique",
+  "verdict_reason": "<one sentence why, in the response language>",
+  "tip": "<one practical tip max 15 words, in the response language>",
+  "search_summary": "<what you found in 1 sentence>"
+}}
+
+Verdict logic:
+- "low": seller price is below 85% of market min — they are undercharging
+- "good": seller price is within market range +/- 15%
+- "high": seller price exceeds market max by more than 15%
+- "unique": could not find similar products in UAE market"""
+
+    user_msg = f"""Product: "{data.product_name}"
+Category: {data.category}
+Seller's current price: AED {data.price}
+
+Search for this product's price in UAE markets now.
+Search queries to try:
+1. "{data.product_name} price UAE AED"
+2. "{data.product_name} noon.com UAE"
+3. "{data.product_name} Dubai buy online"
+4. If product name is Arabic, also search the English translation
+
+After searching, analyze what you found and return the JSON."""
+
+    # ── Step 3: Multi-turn tool use ────────────────────────────────
+    messages = [{"role": "user", "content": user_msg}]
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1500,
+        system=system_prompt,
+        tools=[WEB_SEARCH_TOOL],
+        messages=messages,
+    )
+
+    for _ in range(6):
+        if response.stop_reason != "tool_use":
+            break
+        tool_results = []
+        for block in response.content:
+            if block.type == "tool_use":
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": "Search completed successfully"
+                })
+        messages.append({"role": "assistant", "content": response.content})
+        messages.append({"role": "user", "content": tool_results})
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1500,
+            system=system_prompt,
+            tools=[WEB_SEARCH_TOOL],
+            messages=messages,
         )
-        result = response.json()
-        suggestion = result.get("content", [{}])[0].get("text", "").strip()
-    except:
-        suggestion = f"Market range for this category: AED {price_min}–{price_max}"
 
-    if verdict == "unique":
-        return {"verdict": "unique", "suggestion": suggestion, "min": None, "max": None}
-    return {"verdict": verdict, "suggestion": suggestion, "min": int(price_min), "max": int(price_max)}
+    # ── Step 4: استخراج JSON ───────────────────────────────────────
+    final_text = ""
+    for block in response.content:
+        if hasattr(block, "text") and block.text:
+            final_text = block.text
+            break
+
+    final_text = final_text.strip().replace("```json", "").replace("```", "").strip()
+
+    try:
+        start = final_text.find("{")
+        end = final_text.rfind("}") + 1
+        parsed = json.loads(final_text[start:end])
+    except Exception:
+        return {
+            "verdict": "unique",
+            "suggestion": "لم نتمكن من العثور على أسعار مشابهة في السوق الإماراتي حالياً." if data.lang == "ar" else "Could not find comparable prices in UAE market right now.",
+            "min": None,
+            "max": None,
+            "sources": [],
+            "search_summary": ""
+        }
+
+    # ── Step 5: الرد النهائي ───────────────────────────────────────
+    verdict = parsed.get("verdict", "unique")
+    market_min = parsed.get("market_min")
+    market_max = parsed.get("market_max")
+    tip = parsed.get("tip", "")
+    verdict_reason = parsed.get("verdict_reason", "")
+    sources = parsed.get("sources_found", [])
+    search_summary = parsed.get("search_summary", "")
+    suggestion = f"{verdict_reason} {tip}".strip()
+
+    return {
+        "verdict": verdict,
+        "suggestion": suggestion,
+        "min": int(market_min) if market_min else None,
+        "max": int(market_max) if market_max else None,
+        "sources": sources[:3],
+        "search_summary": search_summary,
+        "bayti_context": bayti_context
+    }
 
 
 @router.get("/demand-forecast")
@@ -263,11 +322,9 @@ async def ai_generate_description(
         raise HTTPException(status_code=500, detail="AI service not configured")
 
     lang_instruction = "Respond in Arabic only." if language == "ar" else "Respond in English only."
-    
-    # Build message content
+
     content_parts = []
-    
-    # Add image if provided
+
     if image and image.filename:
         img_bytes = await image.read()
         img_b64 = base64.standard_b64encode(img_bytes).decode("utf-8")
@@ -279,7 +336,7 @@ async def ai_generate_description(
         })
 
     prompt = f"""You are a UAE marketplace product listing expert. {lang_instruction}
-    
+
 Product name: {product_name or "Unknown"}
 Category: {category or "General"}
 Price: {price + " AED" if price else "Not specified"}
@@ -324,15 +381,14 @@ def generate_instagram_content(data: dict):
 
     client = anthropic.Anthropic(api_key=api_key)
 
-    # Generate caption + image prompt together
     response = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1200,
-        system="""أنت مدير محتوى إنستقرام لمنصة بيتي — ???? ????? ?? ???????? ???????? ?? ???? ???????? ? ???? ?? ???? ?????? ??? ???? ??? ?????? ?????.
+        system="""أنت مدير محتوى إنستقرام لمنصة بيتي — سوق محلي في الإمارات للبائعين المنزليين و غيرهم.
 الموقع في مرحلة تجريبية. اكتب بالعربية الفصحى الخفيفة. لا تخترع أرقاماً.
 الأسلوب: دافئ، مشجع، احترافي. هوية بيتي: برتقالي دافئ، كريمي، طابع منزلي دافئ.
-مهم: لا تخصّص المحتوى لجنسية معينة — الموقع لجميع النساء المقيمات في الإمارات بغض النظر عن جنسيتهن.
-لا تكتب "الإماراتية" أو "الإماراتيات" للإشارة للبائعات — اكتب "المقيمات في الإمارات" أو "بائعات الإمارات" فقط.""",
+مهم: لا تخصّص المحتوى لجنسية معينة — الموقع لجميع المقيمين في الإمارات بغض النظر عن جنسيتهم.
+لا تكتب "الإماراتية" أو "الإماراتيات" للإشارة للبائعات — اكتب "المقيمين في الإمارات" أو "بائعي الإمارات" فقط.""",
         messages=[{
             "role": "user",
             "content": f"""أنشئ منشور إنستقرام عن: {topic}
@@ -352,7 +408,6 @@ def generate_instagram_content(data: dict):
     end = text.rfind("}") + 1
     parsed = json_lib.loads(text[start:end])
 
-    # Generate image if OpenAI key available
     image_url = None
     if openai_key:
         try:
@@ -371,7 +426,6 @@ def generate_instagram_content(data: dict):
             if "url" in img_data:
                 image_url = img_data["url"]
             elif "b64_json" in img_data:
-                # Store as data URL
                 image_url = f"data:image/png;base64,{img_data['b64_json']}"
         except Exception:
             pass
@@ -409,7 +463,6 @@ def generate_instagram_content_v2(data: dict):
     lang = data.get("lang", "ar")
     HASHTAGS = HASHTAGS_AR if lang == "ar" else HASHTAGS_EN
 
-    # ── Type 1: Sellers ─────────────────────────────────────────────
     if content_type == "sellers":
         topics = [
             "دعوة البائعين في الإمارات للانضمام إلى بيتي قبل الإطلاق الرسمي",
@@ -435,7 +488,6 @@ def generate_instagram_content_v2(data: dict):
             "التوصيل المجاني من بيتي — كيف يزيد مبيعاتك تلقائياً",
             "الرفع المتعدد الذكي في بيتي — أضف 20 منتج في دقائق بدل ساعات",
         ]
-        # اختيار topics حسب اللغة
         topics_en = [
             "Inviting UAE-based sellers to join Bayti before official launch",
             "Why selling on Bayti is smarter — AI writes your product listings",
@@ -514,7 +566,7 @@ End exactly with:
 
 اكتب النص مباشرة بدون JSON وبدون عناوين.
 يبدأ بجملة جذابة قوية، إيموجي مناسبة، ١٥٠-٢٠٠ كلمة.
-ينتهي بـ:
+ينتهِ بـ:
 🔗 سجّلي الآن: bayti.ink/sell"""
             response = client.messages.create(
                 model="claude-sonnet-4-6",
@@ -526,7 +578,6 @@ End exactly with:
         caption = response.content[0].text.strip()
         return {"caption": caption, "hashtags": HASHTAGS, "image_url": None, "type": content_type, "event": ""}
 
-    # ── Type 2: Events & Trends (with web search) ────────────────────
     elif content_type == "events":
         system = """أنت مدير محتوى إنستقرام متخصص في المحتوى الإماراتي.
 ابحث عن أبرز خبر أو فعالية إيجابية في الإمارات اليوم واكتب منشوراً عنه.
@@ -559,7 +610,6 @@ End exactly with:
             messages=[{"role": "user", "content": user_msg}]
         )
 
-        # Handle multi-turn tool use
         msgs = [{"role": "user", "content": user_msg}]
         for _ in range(5):
             if response.stop_reason != "tool_use":
@@ -584,7 +634,6 @@ End exactly with:
         tags = parsed.get("hashtags", "#بيتي #الإمارات").split()[:5]
         return {"caption": parsed["caption"], "hashtags": " ".join(tags), "image_url": None, "type": content_type, "event": parsed.get("event", "")}
 
-    # ── Type 3: Value content ────────────────────────────────────────
     else:
         value_topics = [
             "٥ نصائح لتصوير منتجاتك باحترافية من البيت",
@@ -604,7 +653,7 @@ End exactly with:
         topic = random.choice(value_topics)
 
         system = """أنت خبير تسويق ومحتوى متخصص في ريادة الأعمال المنزلية.
-تكتب محتوى قيّماً وعملياً يساعد النساء على تطوير مشاريعهن.
+تكتب محتوى قيّماً وعملياً يساعد الناس على تطوير مشاريعهم.
 اكتب بالعربية الفصحى الخفيفة. الأسلوب: تعليمي، عملي، ملهم."""
 
         response = client.messages.create(
@@ -615,7 +664,7 @@ End exactly with:
 
 اكتب النص مباشرة بدون JSON.
 يبدأ بسؤال أو حقيقة مثيرة، نقاط عملية واضحة مع إيموجي، ١٥٠-٢٠٠ كلمة.
-ينتهي بـ:
+ينتهِ بـ:
 💡 ابدأي رحلتك مع بيتي: bayti.ink/sell"""}]
         )
 
@@ -623,11 +672,10 @@ End exactly with:
         return {"caption": caption, "hashtags": HASHTAGS, "image_url": None, "type": content_type, "event": ""}
 
 
-
 class InviteRequest(BaseModel):
     seller_name: str = ""
     bio_text: str
-    lang: str = ""  # إذا فارغ يُكشف تلقائياً
+    lang: str = ""
 
 @router.post("/generate-invite")
 def generate_invite_message(data: InviteRequest):
@@ -638,7 +686,6 @@ def generate_invite_message(data: InviteRequest):
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
-    # كشف اللغة تلقائياً إذا لم تُحدد
     lang = data.lang
     if not lang:
         arabic = len(_re.findall(r"[\u0600-\u06FF]", data.bio_text))
