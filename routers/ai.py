@@ -746,6 +746,187 @@ class ProposalRequest(BaseModel):
 DEFAULT_PRODUCT = {"emoji": "📦", "name": "Product", "price": "AED 50"}
 DEFAULT_REASON = "A strong fit for Bayti's growing UAE buyer base."
 
+# Static (non-AI-generated) proposal template copy, per language. Selected by `language`
+# and merged into `replacements` so every section of the template is fully translated,
+# not just the AI-written cover.
+PROPOSAL_STATIC_TEXT_EN = {
+    "{{BETA_BANNER_TEXT}}": "Platform is <strong>live and fully functional</strong> — Official public launch in <strong>1–2 months</strong>. Join now as a founding seller and get <strong>priority placement</strong> at launch.",
+
+    "{{SECTION_WHATISBAYTI_LABEL}}": "About the Platform",
+    "{{SECTION_WHATISBAYTI_TITLE}}": "What is Bayti?",
+    "{{SECTION_WHATISBAYTI_INTRO}}": "Bayti{brand_gloss} is a UAE-based online marketplace built <strong>exclusively for home-based sellers</strong>. Unlike Instagram or WhatsApp, you get a dedicated shop page, an order management system, AI-powered tools, and a growing customer base — all without any technical setup.",
+
+    "{{SECTION_YOURSHOP_LABEL}}": "Your Shop",
+    "{{SECTION_YOURSHOP_TITLE}}": "Everything on Your Seller Page",
+    "{{SECTION_YOURSHOP_INTRO}}": "Your public shop page is where buyers find you, browse your menu, and place orders. Here's everything included — out of the box, for free.",
+
+    "{{FEATURE_1_TITLE}}": "Shop Identity",
+    "{{FEATURE_1_DESC}}": "Name, profile photo & logo displayed prominently to all buyers",
+    "{{FEATURE_2_TITLE}}": "Bilingual Description",
+    "{{FEATURE_2_DESC}}": "Arabic & English — AI translates automatically when you save",
+    "{{FEATURE_3_TITLE}}": "Shop Gallery",
+    "{{FEATURE_3_DESC}}": "Up to 3 showcase photos displayed on your public page",
+    "{{FEATURE_4_TITLE}}": "Product Listings",
+    "{{FEATURE_4_DESC}}": "Photos, names, descriptions, pricing & prep time per dish",
+    "{{FEATURE_5_TITLE}}": "Discount Badges",
+    "{{FEATURE_5_DESC}}": "Add % discounts — original price shows crossed-out to buyers",
+    "{{FEATURE_6_TITLE}}": "Free Shipping Threshold",
+    "{{FEATURE_6_DESC}}": "Set a min. order amount for free delivery — calculated automatically",
+    "{{FEATURE_7_TITLE}}": "Delivery by Emirate",
+    "{{FEATURE_7_DESC}}": "Set your delivery fee per emirate, or mark as unavailable",
+    "{{FEATURE_8_TITLE}}": "Working Hours",
+    "{{FEATURE_8_DESC}}": "Your available days & hours shown to buyers before ordering",
+    "{{FEATURE_9_TITLE}}": "Response Time Badge",
+    "{{FEATURE_9_DESC}}": "Shows your average reply time — builds buyer confidence",
+    "{{FEATURE_10_TITLE}}": "Reviews & Ratings",
+    "{{FEATURE_10_DESC}}": "Verified customer reviews displayed on your shop page",
+    "{{FEATURE_11_TITLE}}": "Minimum Order",
+    "{{FEATURE_11_DESC}}": "Set your minimum order value — shown clearly before checkout",
+    "{{FEATURE_12_TITLE}}": "Order Dashboard",
+    "{{FEATURE_12_DESC}}": "Manage all incoming orders from one simple screen",
+
+    "{{SECTION_AITOOLS_LABEL}}": "Included Free",
+    "{{SECTION_AITOOLS_TITLE}}": "AI Tools Built For You",
+    "{{SECTION_AITOOLS_INTRO}}": "Four AI-powered tools that save you time and help you sell more — included in every seller account, at no cost.",
+
+    "{{AI_CARD_1_TITLE}}": "Smart Product Description",
+    "{{AI_CARD_1_DESC}}": "Upload a photo of your product → AI writes a compelling description in both Arabic & English. No writing needed — just a photo.",
+    "{{AI_CARD_2_TITLE}}": "Bayti Studio",
+    "{{AI_CARD_2_DESC}}": "Transform any product photo into a professional marketing image — styled backgrounds, lighting effects — completely free.",
+    "{{AI_CARD_3_TITLE}}": "Pricing Advisor",
+    "{{AI_CARD_3_DESC}}": "Enter your product name & price → AI compares it with similar items in the UAE market and tells you if it's well-positioned.",
+    "{{AI_CARD_4_TITLE}}": "Auto-Translation",
+    "{{AI_CARD_4_DESC}}": "Write your shop description in English → instantly translated to Arabic. Or in Arabic → translated to English. Automatic on save.",
+
+    "{{SECTION_HOWORDERS_LABEL}}": "The Flow",
+    "{{SECTION_HOWORDERS_TITLE}}": "How Orders Work",
+    "{{SECTION_HOWORDERS_INTRO}}": "A simple, end-to-end flow — from browse to delivery. You manage everything from your dashboard.",
+
+    "{{STEP_1_TEXT}}": "Buyer browses your shop",
+    "{{STEP_2_TEXT}}": "Places an order",
+    "{{STEP_3_TEXT}}": "You get notified instantly",
+    "{{STEP_4_TEXT}}": "You prepare & deliver",
+    "{{STEP_5_TEXT}}": "Payment confirmed ✓",
+    "{{SECTION_HOWORDERS_NOTE}}": "Everything managed from a simple dashboard — accessible from your phone or laptop.",
+
+    "{{SECTION_PRICING_LABEL}}": "Cost",
+    "{{SECTION_PRICING_TITLE}}": "What Does It Cost?",
+    "{{PRICING_BOX_TITLE}}": "Completely Free During Beta",
+    "{{PRICING_ITEM_1}}": "No commission on any sale",
+    "{{PRICING_ITEM_2}}": "No monthly subscription fee",
+    "{{PRICING_ITEM_3}}": "No hidden charges, ever",
+    "{{PRICING_ITEM_4}}": "Every dirham you earn is 100% yours",
+    "{{PRICING_NOTE}}": "Pricing will only be introduced after the official launch — and early sellers will always receive the most favorable rates.",
+    "{{PRICING_AMOUNT}}": "FREE",
+    "{{PRICING_PERIOD}}": "During beta phase",
+
+    "{{SECTION_BETAPHASE_LABEL}}": "Where We Are Now",
+    "{{SECTION_BETAPHASE_TITLE}}": "About the Beta Phase",
+    "{{SECTION_BETAPHASE_INTRO}}": "We're in private beta — the platform is live and fully working, but we haven't publicly launched yet. Here's what that means for you.",
+
+    "{{BETA_CARD_1_TITLE}}": "Launch in 1–2 Months",
+    "{{BETA_CARD_1_DESC}}": "Public launch is planned for the coming weeks. Joining now means you're ready from day one.",
+    "{{BETA_CARD_2_TITLE}}": "Priority Visibility",
+    "{{BETA_CARD_2_DESC}}": "Founding sellers get featured placement and priority ranking when we open to the public.",
+    "{{BETA_CARD_3_TITLE}}": "Safe to Explore",
+    "{{BETA_CARD_3_DESC}}": "Create your account, set up your full shop, and explore all features — completely risk-free. No commitment required.",
+    "{{SECTION_BETAPHASE_NOTE}}": "💡 <strong>You can register today, explore the platform at your own pace, and decide if it's right for you — with zero pressure and zero commitment.</strong> We want you to feel confident before you commit to anything.",
+
+    "{{CTA_EYEBROW}}": "Ready to Start?",
+    "{{CTA_TITLE}}": "Create Your Free Shop Today",
+    "{{CTA_SUB}}": "Sign up in minutes. Set up your shop, add your products, and see exactly how {display_name} looks on Bayti — before you decide anything.",
+    "{{CTA_NOTE}}": "Questions? Just reply to this message — we're happy to walk you through it 😊",
+}
+
+PROPOSAL_STATIC_TEXT_AR = {
+    "{{BETA_BANNER_TEXT}}": "المنصة <strong>تعمل بالكامل الآن</strong> — الإطلاق الرسمي خلال <strong>شهر إلى شهرين</strong>. انضم الآن كبائع مؤسس واحصل على <strong>أولوية الظهور</strong> عند الإطلاق.",
+
+    "{{SECTION_WHATISBAYTI_LABEL}}": "عن المنصة",
+    "{{SECTION_WHATISBAYTI_TITLE}}": "ما هي بيتي؟",
+    "{{SECTION_WHATISBAYTI_INTRO}}": "بيتي منصة تسوق إلكترونية في الإمارات مخصصة <strong>حصرياً للبائعين من المنزل</strong>. بخلاف إنستقرام أو واتساب، تحصل على صفحة متجر مستقلة، نظام لإدارة الطلبات، أدوات ذكاء اصطناعي، وقاعدة عملاء متنامية — دون أي إعداد تقني.",
+
+    "{{SECTION_YOURSHOP_LABEL}}": "متجرك",
+    "{{SECTION_YOURSHOP_TITLE}}": "كل ما تحتاجه في صفحة متجرك",
+    "{{SECTION_YOURSHOP_INTRO}}": "صفحة متجرك العامة هي المكان الذي يجدك فيه المشترون، يتصفحون منتجاتك، ويقدّمون طلباتهم. إليك كل ما هو متاح — جاهز فوراً ومجاناً.",
+
+    "{{FEATURE_1_TITLE}}": "هوية المتجر",
+    "{{FEATURE_1_DESC}}": "الاسم، الصورة الشخصية والشعار تظهر بوضوح لكل المشترين",
+    "{{FEATURE_2_TITLE}}": "وصف ثنائي اللغة",
+    "{{FEATURE_2_DESC}}": "عربي وإنجليزي — الذكاء الاصطناعي يترجم تلقائياً عند الحفظ",
+    "{{FEATURE_3_TITLE}}": "معرض صور المتجر",
+    "{{FEATURE_3_DESC}}": "حتى 3 صور تعريفية تظهر في صفحتك العامة",
+    "{{FEATURE_4_TITLE}}": "عرض المنتجات",
+    "{{FEATURE_4_DESC}}": "صور، أسماء، أوصاف، أسعار ووقت التحضير لكل منتج",
+    "{{FEATURE_5_TITLE}}": "شارات الخصم",
+    "{{FEATURE_5_DESC}}": "أضف نسبة خصم % — يظهر السعر الأصلي مشطوباً للمشترين",
+    "{{FEATURE_6_TITLE}}": "حد التوصيل المجاني",
+    "{{FEATURE_6_DESC}}": "حدد مبلغاً أدنى للطلب للحصول على توصيل مجاني — يُحسب تلقائياً",
+    "{{FEATURE_7_TITLE}}": "التوصيل حسب الإمارة",
+    "{{FEATURE_7_DESC}}": "حدد رسوم التوصيل لكل إمارة، أو ضعها كغير متاحة",
+    "{{FEATURE_8_TITLE}}": "ساعات العمل",
+    "{{FEATURE_8_DESC}}": "أيامك وساعات عملك المتاحة تظهر للمشترين قبل الطلب",
+    "{{FEATURE_9_TITLE}}": "شارة سرعة الرد",
+    "{{FEATURE_9_DESC}}": "تُظهر متوسط وقت ردك — تبني ثقة المشتري",
+    "{{FEATURE_10_TITLE}}": "التقييمات والمراجعات",
+    "{{FEATURE_10_DESC}}": "مراجعات عملاء موثّقة تظهر في صفحة متجرك",
+    "{{FEATURE_11_TITLE}}": "الحد الأدنى للطلب",
+    "{{FEATURE_11_DESC}}": "حدد القيمة الدنيا للطلب — تظهر بوضوح قبل إتمام الشراء",
+    "{{FEATURE_12_TITLE}}": "لوحة إدارة الطلبات",
+    "{{FEATURE_12_DESC}}": "أدر جميع الطلبات الواردة من شاشة واحدة بسيطة",
+
+    "{{SECTION_AITOOLS_LABEL}}": "متضمّن مجاناً",
+    "{{SECTION_AITOOLS_TITLE}}": "أدوات ذكاء اصطناعي مصممة لك",
+    "{{SECTION_AITOOLS_INTRO}}": "أربع أدوات مدعومة بالذكاء الاصطناعي توفّر وقتك وتساعدك على البيع أكثر — متضمّنة في كل حساب بائع، دون أي تكلفة.",
+
+    "{{AI_CARD_1_TITLE}}": "وصف المنتج الذكي",
+    "{{AI_CARD_1_DESC}}": "ارفع صورة منتجك ← يكتب الذكاء الاصطناعي وصفاً جذاباً بالعربية والإنجليزية معاً. بلا كتابة — فقط صورة.",
+    "{{AI_CARD_2_TITLE}}": "استوديو بيتي",
+    "{{AI_CARD_2_DESC}}": "حوّل أي صورة منتج إلى صورة تسويقية احترافية — خلفيات مصممة وتأثيرات إضاءة — مجاناً بالكامل.",
+    "{{AI_CARD_3_TITLE}}": "مستشار التسعير",
+    "{{AI_CARD_3_DESC}}": "أدخل اسم منتجك وسعره ← يقارنه الذكاء الاصطناعي بمنتجات مشابهة في السوق الإماراتي ويخبرك إن كان سعرك مناسباً.",
+    "{{AI_CARD_4_TITLE}}": "الترجمة التلقائية",
+    "{{AI_CARD_4_DESC}}": "اكتب وصف متجرك بالإنجليزية ← يُترجم فوراً للعربية. أو بالعربية ← يُترجم للإنجليزية. تلقائياً عند الحفظ.",
+
+    "{{SECTION_HOWORDERS_LABEL}}": "آلية العمل",
+    "{{SECTION_HOWORDERS_TITLE}}": "كيف تعمل الطلبات؟",
+    "{{SECTION_HOWORDERS_INTRO}}": "مسار بسيط من البداية للنهاية — من التصفح إلى التوصيل. تدير كل شيء من لوحة تحكمك.",
+
+    "{{STEP_1_TEXT}}": "المشتري يتصفح متجرك",
+    "{{STEP_2_TEXT}}": "يقدّم طلباً",
+    "{{STEP_3_TEXT}}": "تصلك إشعار فوري",
+    "{{STEP_4_TEXT}}": "تجهّز وتوصّل الطلب",
+    "{{STEP_5_TEXT}}": "تأكيد الدفع ✓",
+    "{{SECTION_HOWORDERS_NOTE}}": "كل شيء تديره من لوحة تحكم بسيطة — يمكن الوصول إليها من هاتفك أو حاسوبك.",
+
+    "{{SECTION_PRICING_LABEL}}": "التكلفة",
+    "{{SECTION_PRICING_TITLE}}": "كم تكلف المنصة؟",
+    "{{PRICING_BOX_TITLE}}": "مجانية بالكامل خلال المرحلة التجريبية",
+    "{{PRICING_ITEM_1}}": "بدون عمولة على أي عملية بيع",
+    "{{PRICING_ITEM_2}}": "بدون رسوم اشتراك شهرية",
+    "{{PRICING_ITEM_3}}": "بدون رسوم خفية على الإطلاق",
+    "{{PRICING_ITEM_4}}": "كل درهم تكسبه هو لك بالكامل",
+    "{{PRICING_NOTE}}": "لن يتم تفعيل أي رسوم إلا بعد الإطلاق الرسمي — وسيحصل البائعون الأوائل دائماً على أفضل الشروط.",
+    "{{PRICING_AMOUNT}}": "مجاناً",
+    "{{PRICING_PERIOD}}": "خلال المرحلة التجريبية",
+
+    "{{SECTION_BETAPHASE_LABEL}}": "أين نحن الآن",
+    "{{SECTION_BETAPHASE_TITLE}}": "عن المرحلة التجريبية",
+    "{{SECTION_BETAPHASE_INTRO}}": "نحن في مرحلة تجريبية خاصة — المنصة تعمل بالكامل، لكننا لم نطلقها للجمهور بعد. إليك ماذا يعني هذا بالنسبة لك.",
+
+    "{{BETA_CARD_1_TITLE}}": "الإطلاق خلال شهر إلى شهرين",
+    "{{BETA_CARD_1_DESC}}": "الإطلاق الرسمي مخطط له خلال الأسابيع القادمة. الانضمام الآن يعني أنك جاهز منذ اليوم الأول.",
+    "{{BETA_CARD_2_TITLE}}": "أولوية الظهور",
+    "{{BETA_CARD_2_DESC}}": "يحصل البائعون المؤسسون على ظهور مميز وترتيب أولوية عند الإطلاق للجمهور.",
+    "{{BETA_CARD_3_TITLE}}": "آمن للتجربة",
+    "{{BETA_CARD_3_DESC}}": "أنشئ حسابك، جهّز متجرك بالكامل، واستكشف كل الميزات — دون أي مخاطرة. بلا أي التزام.",
+    "{{SECTION_BETAPHASE_NOTE}}": "💡 <strong>يمكنك التسجيل اليوم واستكشاف المنصة بالوتيرة التي تناسبك، ثم تقرر إن كانت مناسبة لك — دون أي ضغط أو التزام.</strong> نريدك أن تشعر بالثقة قبل أن تلتزم بأي شيء.",
+
+    "{{CTA_EYEBROW}}": "جاهز للبدء؟",
+    "{{CTA_TITLE}}": "أنشئ متجرك المجاني اليوم",
+    "{{CTA_SUB}}": "سجّل خلال دقائق. جهّز متجرك، أضف منتجاتك، وشاهد بالضبط كيف يظهر {display_name} على بيتي — قبل أن تقرر أي شيء.",
+    "{{CTA_NOTE}}": "لديك أسئلة؟ فقط ردّ على هذه الرسالة — يسعدنا مساعدتك 😊",
+}
+
 @router.post("/generate-proposal")
 def generate_proposal(data: ProposalRequest, db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
     """Generates a personalized HTML sales proposal for an outreach account,
@@ -832,10 +1013,7 @@ Write the personalized proposal content as JSON."""
     html = template_path.read_text(encoding="utf-8")
 
     # Server-computed (not Claude-generated) so language consistency is guaranteed rather
-    # than trusted to the model's output. Note: only the cover section and this badge adapt
-    # to Arabic today -- the feature/AI-tools/steps/pricing/beta/CTA sections below the cover
-    # remain fixed English copy regardless of {{LANGUAGE}}, so "ar" mode is not yet a fully
-    # translated page, just a correctly-tagged, non-mixed-language cover.
+    # than trusted to the model's output.
     if language == "ar":
         dir_value = "rtl"
         brand_secondary = "بيتي"
@@ -867,6 +1045,11 @@ Write the personalized proposal content as JSON."""
         replacements[f"{{{{PRODUCT_{i}_PRICE}}}}"] = p.get("price", DEFAULT_PRODUCT["price"])
     for i, r in enumerate(reasons, start=1):
         replacements[f"{{{{REASON_{i}}}}}"] = r
+
+    static_text = PROPOSAL_STATIC_TEXT_AR if language == "ar" else PROPOSAL_STATIC_TEXT_EN
+    display_name = account.display_name or account.username
+    for placeholder, value in static_text.items():
+        replacements[placeholder] = value.format(brand_gloss=brand_gloss, display_name=display_name)
 
     for placeholder, value in replacements.items():
         html = html.replace(placeholder, str(value))
