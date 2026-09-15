@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from core.database import get_db
-from core.auth import get_current_seller
+from core.auth import get_current_seller, get_current_admin
 from pydantic import BaseModel
 from typing import List, Optional
 import os
@@ -737,3 +737,101 @@ Write directly without headers."""
         return {"message": message, "lang": lang}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class ProposalRequest(BaseModel):
+    account_id: int
+
+DEFAULT_PRODUCT = {"emoji": "📦", "name": "Product", "price": "AED 50"}
+DEFAULT_REASON = "A strong fit for Bayti's growing UAE buyer base."
+
+@router.post("/generate-proposal")
+def generate_proposal(data: ProposalRequest, db: Session = Depends(get_db), current_user=Depends(get_current_admin)):
+    """Generates a personalized HTML sales proposal for an outreach account,
+    filling the bayti-proposals template (see backend/templates/proposal_template.html,
+    based on public/p/auntyzkitchen.html) with AI-written, account-specific content."""
+    import json, datetime, anthropic
+    from pathlib import Path
+    from routers.growth import OutreachAccount
+
+    account = db.query(OutreachAccount).filter(OutreachAccount.id == data.account_id).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI service not configured")
+
+    system_prompt = """You are writing a personalized sales proposal page for Bayti, a UAE local marketplace for home-based sellers, targeting a specific Instagram seller Bayti wants to recruit.
+
+Return ONLY valid JSON with these fields:
+- cover_title: a punchy hook for the seller's specific niche, max 8 words, may include one <br> tag to break it into two lines
+- cover_sub: one sentence (max 30 words) pitching Bayti to this specific seller's niche
+- shop_icon: a single emoji representing their product category
+- products: array of exactly 3 objects {"emoji": ..., "name": ..., "price": "AED NN"}, each a plausible example product for this seller's category with a realistic AED price
+- reasons: array of exactly 6 short strings (each one sentence, may use <strong>...</strong> once for emphasis) explaining specifically why THIS seller is a strong fit for Bayti
+
+Rules:
+- Do not invent specific facts about the seller you don't know (years in business, exact follower counts, review counts, testimonials) unless given in the input — base reasons on their category/niche/location/market fit instead
+- Do not promise guaranteed sales
+- Tone: warm, professional, specific to their niche — not generic hype
+- Return ONLY the JSON object, nothing else"""
+
+    user_prompt = f"""Seller Instagram: @{account.username}
+Display name: {account.display_name or account.username}
+Category: {account.category or "general home business"}
+Emirate: {account.emirate or "UAE"}
+Product note: {account.product_note or "not specified"}
+Followers: {account.followers or "not specified"}
+
+Write the personalized proposal content as JSON."""
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1200,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        text = response.content[0].text.strip()
+        clean = text.replace("```json", "").replace("```", "").strip()
+        start = clean.find("{")
+        end = clean.rfind("}") + 1
+        parsed = json.loads(clean[start:end])
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI generation failed: {e}")
+
+    products = (parsed.get("products") or [])[:3]
+    while len(products) < 3:
+        products.append(DEFAULT_PRODUCT)
+    reasons = (parsed.get("reasons") or [])[:6]
+    while len(reasons) < 6:
+        reasons.append(DEFAULT_REASON)
+
+    template_path = Path(__file__).resolve().parent.parent / "templates" / "proposal_template.html"
+    html = template_path.read_text(encoding="utf-8")
+
+    replacements = {
+        "{{USERNAME}}": account.username,
+        "{{DISPLAY_NAME}}": account.display_name or account.username,
+        "{{EMIRATE}}": account.emirate or "UAE",
+        "{{COVER_TITLE}}": parsed.get("cover_title") or "Your Shop,<br>Now Online.",
+        "{{COVER_SUB}}": parsed.get("cover_sub") or "Bayti connects sellers like you with buyers across the UAE — a professional shop, AI tools, and order management, all in one place.",
+        "{{SHOP_ICON}}": parsed.get("shop_icon") or "🏠",
+        "{{MONTH_YEAR}}": datetime.datetime.now().strftime("%B %Y"),
+    }
+    for i, p in enumerate(products, start=1):
+        replacements[f"{{{{PRODUCT_{i}_EMOJI}}}}"] = p.get("emoji", DEFAULT_PRODUCT["emoji"])
+        replacements[f"{{{{PRODUCT_{i}_NAME}}}}"] = p.get("name", DEFAULT_PRODUCT["name"])
+        replacements[f"{{{{PRODUCT_{i}_PRICE}}}}"] = p.get("price", DEFAULT_PRODUCT["price"])
+    for i, r in enumerate(reasons, start=1):
+        replacements[f"{{{{REASON_{i}}}}}"] = r
+
+    for placeholder, value in replacements.items():
+        html = html.replace(placeholder, str(value))
+
+    return {
+        "html_content": html,
+        "suggested_filename": f"{account.username}.html",
+    }

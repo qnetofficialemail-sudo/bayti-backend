@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bayti Proposal — @{{USERNAME}}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --orange: #FF5A1F;
+    --orange-light: #fff4ee;
+    --orange-mid: #ffe4cc;
+    --dark: #111827;
+    --mid: #374151;
+    --gray: #6B7280;
+    --light: #F9FAFB;
+    --white: #FFFFFF;
+    --green: #059669;
+    --green-light: #ECFDF5;
+    --border: #E5E7EB;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--white);
+    color: var(--dark);
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── COVER ─────────────────────────────────── */
+  .cover {
+    background: linear-gradient(135deg, #fff4ee 0%, #fff9f5 60%, #f0fdf4 100%);
+    padding: 56px 56px 48px;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 3px solid var(--orange);
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,90,31,0.08) 0%, transparent 70%);
+  }
+
+  .cover-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 48px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-icon {
+    width: 44px; height: 44px;
+    background: var(--orange);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+
+  .brand-name {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--dark);
+    letter-spacing: -0.5px;
+  }
+
+  .brand-name span { color: var(--orange); }
+
+  .brand-ar {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gray);
+    direction: rtl;
+  }
+
+  .cover-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--orange);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 100px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .cover-tag {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--orange);
+    margin-bottom: 12px;
+    letter-spacing: 0.2px;
+  }
+
+  .cover-title {
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--dark);
+    line-height: 1.15;
+    letter-spacing: -1.5px;
+    margin-bottom: 16px;
+    max-width: 540px;
+  }
+
+  .cover-sub {
+    font-size: 16px;
+    color: var(--gray);
+    line-height: 1.5;
+    max-width: 480px;
+    margin-bottom: 32px;
+  }
+
+  .cover-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 36px;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px 16px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+  }
+
+  .stat-icon { font-size: 24px; margin-bottom: 6px; }
+  .stat-value { font-size: 16px; font-weight: 800; color: var(--dark); }
+  .stat-label { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+  /* ── BETA BANNER ────────────────────────────── */
+  .beta-banner {
+    background: var(--dark);
+    color: white;
+    padding: 16px 56px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 14px;
+  }
+
+  .beta-pill {
+    background: var(--orange);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 100px;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+
+  .beta-text { color: #D1D5DB; }
+  .beta-text strong { color: white; }
+
+  /* ── SECTIONS ───────────────────────────────── */
+  .section {
+    padding: 48px 56px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section:last-child { border-bottom: none; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--dark);
+    letter-spacing: -0.8px;
+    margin-bottom: 16px;
+    line-height: 1.25;
+  }
+
+  .section-intro {
+    font-size: 15px;
+    color: var(--mid);
+    line-height: 1.7;
+    max-width: 620px;
+    margin-bottom: 28px;
+  }
+
+  /* ── SELLER PAGE FEATURES ───────────────────── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .feature-item {
+    background: white;
+    padding: 18px 20px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .feature-item:hover { background: var(--orange-light); }
+
+  .feature-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .feature-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 3px;
+  }
+
+  .feature-desc {
+    font-size: 12px;
+    color: var(--gray);
+    line-height: 1.5;
+  }
+
+  /* ── AI TOOLS ───────────────────────────────── */
+  .ai-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .ai-card {
+    background: var(--orange-light);
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid var(--orange-mid);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ai-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--orange);
+  }
+
+  .ai-card-icon { font-size: 28px; margin-bottom: 12px; }
+  .ai-card-title { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+  .ai-card-desc { font-size: 13px; color: var(--mid); line-height: 1.6; }
+
+  /* ── HOW IT WORKS ───────────────────────────── */
+  .steps {
+    display: flex;
+    gap: 0;
+    background: var(--light);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .step {
+    flex: 1;
+    padding: 24px 16px;
+    text-align: center;
+    position: relative;
+    border-right: 1px solid var(--border);
+  }
+
+  .step:last-child { border-right: none; }
+
+  .step-num {
+    width: 32px; height: 32px;
+    background: var(--orange);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 auto 10px;
+  }
+
+  .step-text {
+    font-size: 12px;
+    color: var(--mid);
+    line-height: 1.4;
+  }
+
+  .step-arrow {
+    position: absolute;
+    right: -10px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: var(--orange);
+    z-index: 1;
+  }
+
+  /* ── PRICING ────────────────────────────────── */
+  .pricing-box {
+    background: var(--orange);
+    border-radius: 20px;
+    padding: 40px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .pricing-left { flex: 1; }
+
+  .pricing-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+
+  .pricing-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .pricing-item {
+    font-size: 14px;
+    color: rgba(255,255,255,0.85);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pricing-item::before {
+    content: '✓';
+    font-weight: 700;
+    color: white;
+  }
+
+  .pricing-note {
+    margin-top: 14px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.5;
+  }
+
+  .pricing-right { text-align: center; flex-shrink: 0; }
+
+  .pricing-amount {
+    font-size: 64px;
+    font-weight: 800;
+    color: white;
+    line-height: 1;
+    letter-spacing: -3px;
+  }
+
+  .pricing-period {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    margin-top: 4px;
+  }
+
+  /* ── WHY THIS SELLER ────────────────────────── */
+  .reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .reason {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    background: var(--green-light);
+    border-radius: 12px;
+    border: 1px solid #D1FAE5;
+  }
+
+  .reason-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+  .reason-text {
+    font-size: 14px;
+    color: var(--mid);
+    line-height: 1.5;
+  }
+
+  .reason-text strong { color: var(--dark); }
+
+  /* ── BETA INFO ──────────────────────────────── */
+  .beta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+
+  .beta-card {
+    background: var(--light);
+    border-radius: 14px;
+    padding: 24px 20px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .beta-card-icon { font-size: 28px; margin-bottom: 10px; }
+  .beta-card-title { font-size: 13px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+  .beta-card-desc { font-size: 12px; color: var(--gray); line-height: 1.5; }
+
+  /* ── CTA ────────────────────────────────────── */
+  .cta-section {
+    background: var(--dark);
+    padding: 56px;
+    text-align: center;
+  }
+
+  .cta-eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 16px;
+  }
+
+  .cta-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -1px;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  .cta-sub {
+    font-size: 15px;
+    color: #9CA3AF;
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 0 auto 32px;
+  }
+
+  .cta-link {
+    display: inline-block;
+    background: var(--orange);
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 16px 40px;
+    border-radius: 14px;
+    text-decoration: none;
+    letter-spacing: -0.3px;
+    margin-bottom: 24px;
+  }
+
+  .cta-note {
+    font-size: 13px;
+    color: #6B7280;
+    font-style: italic;
+  }
+
+  /* ── FOOTER ─────────────────────────────────── */
+  .footer {
+    padding: 24px 56px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    background: var(--light);
+  }
+
+  .footer-brand { font-size: 14px; font-weight: 700; color: var(--dark); }
+  .footer-brand span { color: var(--orange); }
+  .footer-note { font-size: 12px; color: var(--gray); }
+
+  /* ── SCREENSHOT MOCKUPS ─────────────────────── */
+  .mockup-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .mockup {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: white;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+
+  .mockup-bar {
+    background: var(--light);
+    padding: 10px 14px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-r { background: #FC5858; }
+  .dot-y { background: #FCBF04; }
+  .dot-g { background: #29C840; }
+
+  .mockup-url {
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    color: var(--gray);
+    background: white;
+    border-radius: 6px;
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+  }
+
+  .mockup-content {
+    padding: 20px;
+  }
+
+  .mock-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mock-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--orange-light), var(--orange-mid));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    border: 2px solid var(--orange-mid);
+    flex-shrink: 0;
+  }
+
+  .mock-shop-name { font-size: 14px; font-weight: 700; color: var(--dark); }
+  .mock-location { font-size: 11px; color: var(--gray); margin-top: 2px; }
+  .mock-rating { font-size: 11px; color: var(--orange); margin-top: 2px; }
+
+  .mock-badge {
+    display: inline-block;
+    background: var(--green-light);
+    color: var(--green);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 100px;
+    border: 1px solid #D1FAE5;
+    margin-left: 6px;
+  }
+
+  .mock-products {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .mock-product {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .mock-product-img {
+    height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+
+  .mock-product-info { padding: 6px 8px; }
+  .mock-product-name { font-size: 9px; font-weight: 600; color: var(--dark); line-height: 1.3; }
+  .mock-product-price { font-size: 10px; font-weight: 700; color: var(--orange); margin-top: 2px; }
+  .mock-product-old { font-size: 9px; color: var(--gray); text-decoration: line-through; }
+
+  /* Dashboard mockup */
+  .mock-dashboard { padding: 16px 20px; }
+
+  .mock-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .mock-stat {
+    background: var(--light);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+
+  .mock-stat-value { font-size: 18px; font-weight: 800; color: var(--dark); }
+  .mock-stat-label { font-size: 10px; color: var(--gray); margin-top: 2px; }
+
+  .mock-order {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin-bottom: 6px;
+  }
+
+  .mock-order-icon { font-size: 16px; }
+  .mock-order-details { flex: 1; }
+  .mock-order-name { font-size: 11px; font-weight: 600; color: var(--dark); }
+  .mock-order-info { font-size: 10px; color: var(--gray); }
+
+  .mock-order-status {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 100px;
+  }
+
+  .status-pending { background: #FEF3C7; color: #D97706; }
+  .status-confirmed { background: #DBEAFE; color: #2563EB; }
+
+  @media print {
+    body { max-width: 100%; }
+    .cover { page-break-after: avoid; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-top">
+    <div class="brand">
+      <div class="brand-icon">🏠</div>
+      <div>
+        <div class="brand-name">Bayti <span>.</span> <span style="font-size:16px;color:#6B7280">بيتي</span></div>
+      </div>
+    </div>
+    <div class="cover-badge">⚡ Beta Phase — Join Now</div>
+  </div>
+
+  <div class="cover-tag">A proposal prepared exclusively for @{{USERNAME}}</div>
+  <h1 class="cover-title">{{COVER_TITLE}}</h1>
+  <p class="cover-sub">{{COVER_SUB}}</p>
+
+  <div class="cover-stats">
+    <div class="stat-card">
+      <div class="stat-icon">🇦🇪</div>
+      <div class="stat-value">All UAE</div>
+      <div class="stat-label">Coverage</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🏠</div>
+      <div class="stat-value">Home Sellers</div>
+      <div class="stat-label">Only</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🤖</div>
+      <div class="stat-value">4 AI Tools</div>
+      <div class="stat-label">Free for you</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div class="stat-value">0% Commission</div>
+      <div class="stat-label">Beta phase</div>
+    </div>
+  </div>
+</div>
+
+<!-- BETA BANNER -->
+<div class="beta-banner">
+  <div class="beta-pill">BETA</div>
+  <div class="beta-text">
+    Platform is <strong>live and fully functional</strong> — Official public launch in <strong>1–2 months</strong>.
+    Join now as a founding seller and get <strong>priority placement</strong> at launch.
+  </div>
+</div>
+
+<!-- WHAT IS BAYTI -->
+<div class="section">
+  <div class="section-label">About the Platform</div>
+  <h2 class="section-title">What is Bayti?</h2>
+  <p class="section-intro">
+    Bayti (بيتي) is a UAE-based online marketplace built <strong>exclusively for home-based sellers</strong>.
+    Unlike Instagram or WhatsApp, you get a dedicated shop page, an order management system,
+    AI-powered tools, and a growing customer base — all without any technical setup.
+  </p>
+
+  <!-- Mockup: Shop page -->
+  <div class="mockup">
+    <div class="mockup-bar">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="mockup-url">www.bayti.ink/shop/{{USERNAME}}</div>
+    </div>
+    <div class="mockup-content">
+      <div class="mock-header">
+        <div class="mock-avatar">{{SHOP_ICON}}</div>
+        <div>
+          <div class="mock-shop-name">{{DISPLAY_NAME}} <span class="mock-badge">✓ Verified</span></div>
+          <div class="mock-location">📍 {{EMIRATE}}, UAE</div>
+          <div class="mock-rating">⭐ 4.9 · 89 orders · ⚡ Responds in 2hr</div>
+        </div>
+      </div>
+      <div class="mock-products">
+        <div class="mock-product">
+          <div class="mock-product-img" style="background:#fff4ee">{{PRODUCT_1_EMOJI}}</div>
+          <div class="mock-product-info">
+            <div class="mock-product-name">{{PRODUCT_1_NAME}}</div>
+            <div class="mock-product-price">{{PRODUCT_1_PRICE}}</div>
+          </div>
+        </div>
+        <div class="mock-product">
+          <div class="mock-product-img" style="background:#f0fdf4">{{PRODUCT_2_EMOJI}}</div>
+          <div class="mock-product-info">
+            <div class="mock-product-name">{{PRODUCT_2_NAME}}</div>
+            <div class="mock-product-price">{{PRODUCT_2_PRICE}}</div>
+          </div>
+        </div>
+        <div class="mock-product">
+          <div class="mock-product-img" style="background:#fff4ee">{{PRODUCT_3_EMOJI}}</div>
+          <div class="mock-product-info">
+            <div class="mock-product-name">{{PRODUCT_3_NAME}}</div>
+            <div class="mock-product-price">{{PRODUCT_3_PRICE}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SELLER PAGE -->
+<div class="section">
+  <div class="section-label">Your Shop</div>
+  <h2 class="section-title">Everything on Your Seller Page</h2>
+  <p class="section-intro">Your public shop page is where buyers find you, browse your menu, and place orders. Here's everything included — out of the box, for free.</p>
+
+  <div class="features-grid">
+    <div class="feature-item">
+      <div class="feature-icon">🏠</div>
+      <div>
+        <div class="feature-title">Shop Identity</div>
+        <div class="feature-desc">Name, profile photo & logo displayed prominently to all buyers</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📝</div>
+      <div>
+        <div class="feature-title">Bilingual Description</div>
+        <div class="feature-desc">Arabic & English — AI translates automatically when you save</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📸</div>
+      <div>
+        <div class="feature-title">Shop Gallery</div>
+        <div class="feature-desc">Up to 3 showcase photos displayed on your public page</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📦</div>
+      <div>
+        <div class="feature-title">Product Listings</div>
+        <div class="feature-desc">Photos, names, descriptions, pricing & prep time per dish</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🏷️</div>
+      <div>
+        <div class="feature-title">Discount Badges</div>
+        <div class="feature-desc">Add % discounts — original price shows crossed-out to buyers</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🚚</div>
+      <div>
+        <div class="feature-title">Free Shipping Threshold</div>
+        <div class="feature-desc">Set a min. order amount for free delivery — calculated automatically</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📍</div>
+      <div>
+        <div class="feature-title">Delivery by Emirate</div>
+        <div class="feature-desc">Set your delivery fee per emirate, or mark as unavailable</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🕐</div>
+      <div>
+        <div class="feature-title">Working Hours</div>
+        <div class="feature-desc">Your available days & hours shown to buyers before ordering</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">⚡</div>
+      <div>
+        <div class="feature-title">Response Time Badge</div>
+        <div class="feature-desc">Shows your average reply time — builds buyer confidence</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">⭐</div>
+      <div>
+        <div class="feature-title">Reviews & Ratings</div>
+        <div class="feature-desc">Verified customer reviews displayed on your shop page</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🛒</div>
+      <div>
+        <div class="feature-title">Minimum Order</div>
+        <div class="feature-desc">Set your minimum order value — shown clearly before checkout</div>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📊</div>
+      <div>
+        <div class="feature-title">Order Dashboard</div>
+        <div class="feature-desc">Manage all incoming orders from one simple screen</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard mockup -->
+  <div class="mockup" style="margin-top:20px">
+    <div class="mockup-bar">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="mockup-url">www.bayti.ink/seller/dashboard</div>
+    </div>
+    <div class="mock-dashboard">
+      <div class="mock-stats-row">
+        <div class="mock-stat">
+          <div class="mock-stat-value">12</div>
+          <div class="mock-stat-label">Orders This Week</div>
+        </div>
+        <div class="mock-stat">
+          <div class="mock-stat-value">AED 540</div>
+          <div class="mock-stat-label">Revenue</div>
+        </div>
+        <div class="mock-stat">
+          <div class="mock-stat-value">4.9 ⭐</div>
+          <div class="mock-stat-label">Rating</div>
+        </div>
+      </div>
+      <div class="mock-order">
+        <div class="mock-order-icon">📦</div>
+        <div class="mock-order-details">
+          <div class="mock-order-name">Order #42 — {{PRODUCT_1_NAME}} × 2</div>
+          <div class="mock-order-info">Downtown Dubai · AED 90 · 12 min ago</div>
+        </div>
+        <div class="mock-order-status status-pending">Pending</div>
+      </div>
+      <div class="mock-order">
+        <div class="mock-order-icon">{{PRODUCT_2_EMOJI}}</div>
+        <div class="mock-order-details">
+          <div class="mock-order-name">Order #41 — {{PRODUCT_2_NAME}}</div>
+          <div class="mock-order-info">Jumeirah · AED 65 · 1hr ago</div>
+        </div>
+        <div class="mock-order-status status-confirmed">Confirmed</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI TOOLS -->
+<div class="section" style="background:var(--light)">
+  <div class="section-label">Included Free</div>
+  <h2 class="section-title">AI Tools Built For You</h2>
+  <p class="section-intro">Four AI-powered tools that save you time and help you sell more — included in every seller account, at no cost.</p>
+
+  <div class="ai-grid">
+    <div class="ai-card">
+      <div class="ai-card-icon">📸</div>
+      <div class="ai-card-title">Smart Product Description</div>
+      <div class="ai-card-desc">Upload a photo of your product → AI writes a compelling description in both Arabic & English. No writing needed — just a photo.</div>
+    </div>
+    <div class="ai-card">
+      <div class="ai-card-icon">🎨</div>
+      <div class="ai-card-title">Bayti Studio</div>
+      <div class="ai-card-desc">Transform any product photo into a professional marketing image — styled backgrounds, lighting effects — completely free.</div>
+    </div>
+    <div class="ai-card">
+      <div class="ai-card-icon">💰</div>
+      <div class="ai-card-title">Pricing Advisor</div>
+      <div class="ai-card-desc">Enter your product name & price → AI compares it with similar items in the UAE market and tells you if it's well-positioned.</div>
+    </div>
+    <div class="ai-card">
+      <div class="ai-card-icon">🌐</div>
+      <div class="ai-card-title">Auto-Translation</div>
+      <div class="ai-card-desc">Write your shop description in English → instantly translated to Arabic. Or in Arabic → translated to English. Automatic on save.</div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="section">
+  <div class="section-label">The Flow</div>
+  <h2 class="section-title">How Orders Work</h2>
+  <p class="section-intro">A simple, end-to-end flow — from browse to delivery. You manage everything from your dashboard.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Buyer browses your shop</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Places an order</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">You get notified instantly</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">You prepare & deliver</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">Payment confirmed ✓</div>
+    </div>
+  </div>
+
+  <p style="margin-top:16px;font-size:13px;color:var(--gray)">
+    Everything managed from a simple dashboard — accessible from your phone or laptop.
+  </p>
+</div>
+
+<!-- PRICING -->
+<div class="section">
+  <div class="section-label">Cost</div>
+  <h2 class="section-title">What Does It Cost?</h2>
+
+  <div class="pricing-box">
+    <div class="pricing-left">
+      <div class="pricing-title">Completely Free During Beta</div>
+      <div class="pricing-items">
+        <div class="pricing-item">No commission on any sale</div>
+        <div class="pricing-item">No monthly subscription fee</div>
+        <div class="pricing-item">No hidden charges, ever</div>
+        <div class="pricing-item">Every dirham you earn is 100% yours</div>
+      </div>
+      <div class="pricing-note">
+        Pricing will only be introduced after the official launch — and early sellers will always receive the most favorable rates.
+      </div>
+    </div>
+    <div class="pricing-right">
+      <div class="pricing-amount">FREE</div>
+      <div class="pricing-period">During beta phase</div>
+    </div>
+  </div>
+</div>
+
+<!-- WHY THIS SELLER -->
+<div class="section" style="background:var(--light)">
+  <div class="section-label">The Fit</div>
+  <h2 class="section-title">Why {{DISPLAY_NAME}} Belongs on Bayti</h2>
+  <p class="section-intro">This isn't a generic pitch — here's exactly why your shop is a strong match for what Bayti buyers are looking for.</p>
+
+  <div class="reasons">
+    <div class="reason">
+      <div class="reason-icon">✅</div>
+      <div class="reason-text">{{REASON_1}}</div>
+    </div>
+    <div class="reason">
+      <div class="reason-icon">✅</div>
+      <div class="reason-text">{{REASON_2}}</div>
+    </div>
+    <div class="reason">
+      <div class="reason-icon">✅</div>
+      <div class="reason-text">{{REASON_3}}</div>
+    </div>
+    <div class="reason">
+      <div class="reason-icon">✅</div>
+      <div class="reason-text">{{REASON_4}}</div>
+    </div>
+    <div class="reason">
+      <div class="reason-icon">✅</div>
+      <div class="reason-text">{{REASON_5}}</div>
+    </div>
+    <div class="reason">
+      <div class="reason-icon">✅</div>
+      <div class="reason-text">{{REASON_6}}</div>
+    </div>
+  </div>
+</div>
+
+<!-- BETA -->
+<div class="section">
+  <div class="section-label">Where We Are Now</div>
+  <h2 class="section-title">About the Beta Phase</h2>
+  <p class="section-intro">We're in private beta — the platform is live and fully working, but we haven't publicly launched yet. Here's what that means for you.</p>
+
+  <div class="beta-grid">
+    <div class="beta-card">
+      <div class="beta-card-icon">🚀</div>
+      <div class="beta-card-title">Launch in 1–2 Months</div>
+      <div class="beta-card-desc">Public launch is planned for the coming weeks. Joining now means you're ready from day one.</div>
+    </div>
+    <div class="beta-card">
+      <div class="beta-card-icon">🌟</div>
+      <div class="beta-card-title">Priority Visibility</div>
+      <div class="beta-card-desc">Founding sellers get featured placement and priority ranking when we open to the public.</div>
+    </div>
+    <div class="beta-card">
+      <div class="beta-card-icon">🔐</div>
+      <div class="beta-card-title">Safe to Explore</div>
+      <div class="beta-card-desc">Create your account, set up your full shop, and explore all features — completely risk-free. No commitment required.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px;padding:20px 24px;background:var(--orange-light);border-radius:14px;border:1px solid var(--orange-mid)">
+    <p style="font-size:14px;color:var(--mid);line-height:1.6">
+      💡 <strong>You can register today, explore the platform at your own pace,
+      and decide if it's right for you — with zero pressure and zero commitment.</strong>
+      We want you to feel confident before you commit to anything.
+    </p>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="cta-eyebrow">Ready to Start?</div>
+  <h2 class="cta-title">Create Your Free Shop Today</h2>
+  <p class="cta-sub">
+    Sign up in minutes. Set up your shop, add your products, and see exactly how {{DISPLAY_NAME}} looks on Bayti — before you decide anything.
+  </p>
+  <a href="https://www.bayti.ink/sell" class="cta-link">www.bayti.ink/sell</a>
+  <div class="cta-note">Questions? Just reply to this message — we're happy to walk you through it 😊</div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-brand">🏠 <span>Bayti</span> · www.bayti.ink</div>
+  <div class="footer-note">Prepared exclusively for @{{USERNAME}} · {{MONTH_YEAR}}</div>
+</div>
+
+</body>
+</html>
