@@ -762,13 +762,27 @@ def generate_proposal(data: ProposalRequest, db: Session = Depends(get_db), curr
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")
 
-    system_prompt = """You are writing a personalized sales proposal page for Bayti, a UAE local marketplace for home-based sellers, targeting a specific Instagram seller Bayti wants to recruit.
+    # Deterministic language detection (same convention as growth.generate_message),
+    # decided up front so the template's lang/dir and static bits match Claude's output.
+    import re as _re
+    text_sample = f"{account.display_name} {account.category} {account.product_note}"
+    arabic_chars = len(_re.findall(r"[؀-ۿ]", text_sample))
+    english_chars = len(_re.findall(r"[a-zA-Z]", text_sample))
+    total_chars = arabic_chars + english_chars
+    arabic_ratio = arabic_chars / total_chars if total_chars > 0 else 0
+    language = "ar" if arabic_ratio >= 0.30 else "en"
+    lang_instruction = "Write cover_title, cover_sub, product names, and reasons in Arabic only." if language == "ar" \
+        else "Write cover_title, cover_sub, product names, and reasons in English only."
+
+    system_prompt = f"""You are writing a personalized sales proposal page for Bayti, a UAE local marketplace for home-based sellers, targeting a specific Instagram seller Bayti wants to recruit.
+
+{lang_instruction} Do not mix languages within a field.
 
 Return ONLY valid JSON with these fields:
 - cover_title: a punchy hook for the seller's specific niche, max 8 words, may include one <br> tag to break it into two lines
 - cover_sub: one sentence (max 30 words) pitching Bayti to this specific seller's niche
 - shop_icon: a single emoji representing their product category
-- products: array of exactly 3 objects {"emoji": ..., "name": ..., "price": "AED NN"}, each a plausible example product for this seller's category with a realistic AED price
+- products: array of exactly 3 objects {{"emoji": ..., "name": ..., "price": "AED NN"}}, each a plausible example product for this seller's category with a realistic AED price
 - reasons: array of exactly 6 short strings (each one sentence, may use <strong>...</strong> once for emphasis) explaining specifically why THIS seller is a strong fit for Bayti
 
 Rules:
@@ -812,10 +826,31 @@ Write the personalized proposal content as JSON."""
     template_path = Path(__file__).resolve().parent.parent / "templates" / "proposal_template.html"
     html = template_path.read_text(encoding="utf-8")
 
+    # Server-computed (not Claude-generated) so language consistency is guaranteed rather
+    # than trusted to the model's output. Note: only the cover section and this badge adapt
+    # to Arabic today -- the feature/AI-tools/steps/pricing/beta/CTA sections below the cover
+    # remain fixed English copy regardless of {{LANGUAGE}}, so "ar" mode is not yet a fully
+    # translated page, just a correctly-tagged, non-mixed-language cover.
+    if language == "ar":
+        dir_value = "rtl"
+        brand_secondary = "بيتي"
+        brand_gloss = " (بيتي)"
+        cover_badge = "⚡ مرحلة تجريبية — انضم الآن"
+    else:
+        dir_value = "ltr"
+        brand_secondary = ""
+        brand_gloss = ""
+        cover_badge = "⚡ Beta Phase — Join Now"
+
     replacements = {
         "{{USERNAME}}": account.username,
         "{{DISPLAY_NAME}}": account.display_name or account.username,
         "{{EMIRATE}}": account.emirate or "UAE",
+        "{{LANGUAGE}}": language,
+        "{{DIR}}": dir_value,
+        "{{BRAND_SECONDARY}}": brand_secondary,
+        "{{BRAND_GLOSS}}": brand_gloss,
+        "{{COVER_BADGE}}": cover_badge,
         "{{COVER_TITLE}}": parsed.get("cover_title") or "Your Shop,<br>Now Online.",
         "{{COVER_SUB}}": parsed.get("cover_sub") or "Bayti connects sellers like you with buyers across the UAE — a professional shop, AI tools, and order management, all in one place.",
         "{{SHOP_ICON}}": parsed.get("shop_icon") or "🏠",
