@@ -583,7 +583,16 @@ End exactly with:
         return {"caption": caption, "hashtags": HASHTAGS, "image_url": None, "type": content_type, "event": ""}
 
     elif content_type == "events":
-        system = """أنت مدير محتوى إنستقرام متخصص في المحتوى الإماراتي.
+        system_en = """You are an Instagram content manager specialized in UAE-related content.
+Search for the most notable positive news or event in the UAE today and write a post about it.
+Strict rules:
+- Write in warm, professional English
+- Completely avoid: politics, wars, crimes, accidents, any negative news
+- Focus on: events, festivals, openings, achievements, food, art, sports, weather
+- Do not mention Bayti or any platform in the post
+- End with an engaging question, then: Follow us for more 🏡"""
+
+        system_ar = """أنت مدير محتوى إنستقرام متخصص في المحتوى الإماراتي.
 ابحث عن أبرز خبر أو فعالية إيجابية في الإمارات اليوم واكتب منشوراً عنه.
 قواعد صارمة:
 - اكتب بالعربية الفصحى الخفيفة
@@ -592,9 +601,24 @@ End exactly with:
 - لا تذكر بيتي أو أي منصة في المنشور
 - انهِ بسؤال تفاعلي ثم: تابعونا لمزيد 🏡"""
 
+        system = system_en if lang == "en" else system_ar
+
         WEB_SEARCH_TOOL = {"type": "web_search_20250305", "name": "web_search"}
 
-        user_msg = f"""اليوم: {current_date}
+        if lang == "en":
+            user_msg = f"""Today: {current_date}
+
+Search now for the most notable positive news or event in the UAE today or this week.
+Search for: UAE events {current_month} 2026, Dubai festivals today, Abu Dhabi events
+
+After searching, choose the most positive and appealing one and give me JSON only:
+{{
+  "event": "Event title",
+  "caption": "Instagram post in English — engaging, 150-200 words, an interactive question, then:\n\nFollow us for more 🏡",
+  "hashtags": "5 hashtags: 2-3 about the event + #bayti + #UAE"
+}}"""
+        else:
+            user_msg = f"""اليوم: {current_date}
 
 ابحث الآن عن أبرز خبر أو فعالية إيجابية في الإمارات اليوم أو هذا الأسبوع.
 ابحث عن: UAE events {current_month} 2026, Dubai festivals today, Abu Dhabi events, فعاليات الإمارات اليوم
@@ -633,13 +657,14 @@ End exactly with:
         final_text = final_text.strip().replace("```json", "").replace("```", "").strip()
         start = final_text.find("{")
         end = final_text.rfind("}") + 1
-        parsed = json_lib.loads(final_text[start:end]) if start >= 0 and end > start else {"event": "فعالية الإمارات", "caption": final_text, "hashtags": "#بيتي #الإمارات"}
+        fallback = {"event": "UAE Event", "caption": final_text, "hashtags": "#bayti #UAE"} if lang == "en" else {"event": "فعالية الإمارات", "caption": final_text, "hashtags": "#بيتي #الإمارات"}
+        parsed = json_lib.loads(final_text[start:end]) if start >= 0 and end > start else fallback
 
-        tags = parsed.get("hashtags", "#بيتي #الإمارات").split()[:5]
+        tags = parsed.get("hashtags", fallback["hashtags"]).split()[:5]
         return {"caption": parsed["caption"], "hashtags": " ".join(tags), "image_url": None, "type": content_type, "event": parsed.get("event", "")}
 
     else:
-        value_topics = [
+        value_topics_ar = [
             "٥ نصائح لتصوير منتجاتك باحترافية من البيت",
             "كيف تحددين سعر منتجك بذكاء؟",
             "أفكار هدايا مميزة من منتجات محلية",
@@ -654,22 +679,53 @@ End exactly with:
             "التوصيل المجاني: هل هو ميزة أم فخ؟ كيف تحسبينه صح",
             "كيف ترفع 20 صورة لمنتجاتك دفعة واحدة وتوفر ساعات من العمل",
         ]
-        topic = random.choice(value_topics)
+        value_topics_en = [
+            "5 tips to photograph your products professionally at home",
+            "How to price your product smartly?",
+            "Unique gift ideas from local products",
+            "How to build your personal brand?",
+            "Common mistakes new sellers make",
+            "How to write an attractive product description?",
+            "Tips for professional product packaging",
+            "How to deal with a difficult customer?",
+            "How to find your first customers?",
+            "Why do you need a story for your brand?",
+            "When should you add a discount to your product? And when does it hurt you?",
+            "Free shipping: a feature or a trap? How to calculate it right",
+            "How to upload 20 product photos at once and save hours of work",
+        ]
+        topic = random.choice(value_topics_en if lang == "en" else value_topics_ar)
 
-        system = """أنت خبير تسويق ومحتوى متخصص في ريادة الأعمال المنزلية.
+        system_en = """You are a marketing and content expert specialized in home-based entrepreneurship.
+You write valuable, practical content that helps people grow their businesses.
+Write in warm, professional English. Style: educational, practical, inspiring."""
+
+        system_ar = """أنت خبير تسويق ومحتوى متخصص في ريادة الأعمال المنزلية.
 تكتب محتوى قيّماً وعملياً يساعد الناس على تطوير مشاريعهم.
 اكتب بالعربية الفصحى الخفيفة. الأسلوب: تعليمي، عملي، ملهم."""
+
+        system = system_en if lang == "en" else system_ar
+
+        if lang == "en":
+            user_msg = f"""Create an educational Instagram post about: {topic}
+
+Write the text directly without JSON.
+Start with a question or an interesting fact, clear practical points with emojis, 150-200 words.
+End with:
+💡 Start your journey with Bayti: bayti.ink/sell"""
+        else:
+            user_msg = f"""أنشئ منشور إنستقرام تعليمي عن: {topic}
+
+اكتب النص مباشرة بدون JSON.
+يبدأ بسؤال أو حقيقة مثيرة، نقاط عملية واضحة مع إيموجي، ١٥٠-٢٠٠ كلمة.
+ينتهِ بـ:
+💡 ابدأي رحلتك مع بيتي: bayti.ink/sell"""
 
         response = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=1000,
             system=system,
-            messages=[{"role": "user", "content": f"""أنشئ منشور إنستقرام تعليمي عن: {topic}
-
-اكتب النص مباشرة بدون JSON.
-يبدأ بسؤال أو حقيقة مثيرة، نقاط عملية واضحة مع إيموجي، ١٥٠-٢٠٠ كلمة.
-ينتهِ بـ:
-💡 ابدأي رحلتك مع بيتي: bayti.ink/sell"""}]
+            messages=[{"role": "user", "content": user_msg}]
         )
 
         caption = response.content[0].text.strip()
