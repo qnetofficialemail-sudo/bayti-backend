@@ -741,6 +741,7 @@ Write directly without headers."""
 
 class ProposalRequest(BaseModel):
     account_id: int
+    language: Optional[str] = None
 
 DEFAULT_PRODUCT = {"emoji": "📦", "name": "Product", "price": "AED 50"}
 DEFAULT_REASON = "A strong fit for Bayti's growing UAE buyer base."
@@ -764,13 +765,17 @@ def generate_proposal(data: ProposalRequest, db: Session = Depends(get_db), curr
 
     # Deterministic language detection (same convention as growth.generate_message),
     # decided up front so the template's lang/dir and static bits match Claude's output.
-    import re as _re
-    text_sample = f"{account.display_name} {account.category} {account.product_note}"
-    arabic_chars = len(_re.findall(r"[؀-ۿ]", text_sample))
-    english_chars = len(_re.findall(r"[a-zA-Z]", text_sample))
-    total_chars = arabic_chars + english_chars
-    arabic_ratio = arabic_chars / total_chars if total_chars > 0 else 0
-    language = "ar" if arabic_ratio >= 0.30 else "en"
+    # An explicit `language` in the request overrides auto-detection.
+    if data.language in ("ar", "en"):
+        language = data.language
+    else:
+        import re as _re
+        text_sample = f"{account.display_name} {account.category} {account.product_note}"
+        arabic_chars = len(_re.findall(r"[؀-ۿ]", text_sample))
+        english_chars = len(_re.findall(r"[a-zA-Z]", text_sample))
+        total_chars = arabic_chars + english_chars
+        arabic_ratio = arabic_chars / total_chars if total_chars > 0 else 0
+        language = "ar" if arabic_ratio >= 0.30 else "en"
     lang_instruction = "Write cover_title, cover_sub, product names, and reasons in Arabic only." if language == "ar" \
         else "Write cover_title, cover_sub, product names, and reasons in English only."
 
